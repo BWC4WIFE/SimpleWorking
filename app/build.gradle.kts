@@ -51,7 +51,13 @@ android {
         }
     }
     
-   
+    // This is the correct, modern way to rename the output APK file.
+    onVariants { variant ->
+        variant.outputs.all { output ->
+            output.outputFileName = "Trans2Thai-${variant.name}.apk"
+        }
+    }
+}
 
 dependencies {
     // Core & UI
@@ -68,15 +74,20 @@ dependencies {
 
     // Compose - Using a BOM compatible with the specified compiler
     implementation(platform("androidx.compose:compose-bom:2024.02.02"))
-    implementation("androidx.compose
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
 
-        }
-    }
-  android.applicationVariants.all {
-    outputs.all {
-        val outputImpl = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-        outputImpl.outputFileName = "Trans2Thai-${name}.apk"
+    // Networking
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    // Testing
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.02.02"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
-
-        }
-    
