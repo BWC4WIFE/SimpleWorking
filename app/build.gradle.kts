@@ -28,16 +28,27 @@ android {
             )
         }
     }
-  buildFeatures {
-        // We are enabling compose AND dataBinding.
-        compose = true
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+    buildFeatures {
+        // Enabling dataBinding is crucial. This also enables viewBinding.
         dataBinding = true
+        compose = true
     }
-
-    // Modern way to set the APK name
-    buildTypes.all {
-        setProperty("archivesBaseName", "BWCTrans-${name}")
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.8"
     }
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+}
 
 dependencies {
     // Core & UI
@@ -46,7 +57,6 @@ dependencies {
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("com.google.code.gson:gson:2.10.1")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
@@ -60,6 +70,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
 
     // Networking
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     // Testing
@@ -70,19 +81,4 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-}
-compileOptions {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-}
-
-kotlinOptions {
-    jvmTarget = "17"
-}
-
-kotlin {
-    jvmToolchain(17)
-}
-
-
 }
