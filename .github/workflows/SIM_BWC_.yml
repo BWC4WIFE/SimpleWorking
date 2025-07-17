@@ -55,7 +55,7 @@ jobs:
         run: |
           chmod +x gradlew
           # Run a clean build with extra info for debugging
-          ./gradlew clean build --stacktrace --info
+          ./gradlew clean build --stacktrace 
 
       - name: List Generated APK Files
         run: ls -l app/build/outputs/apk/debug/
