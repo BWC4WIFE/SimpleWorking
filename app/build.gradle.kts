@@ -72,10 +72,11 @@ dependencies {
 
         }
     }
-  onVariants { variant ->
-        variant.outputs.all { output ->
-            output.outputFileName = "BWCTrans-${variant.name}.apk"
+  android.applicationVariants.all {
+    outputs.all {
+        val outputImpl = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+        outputImpl.outputFileName = "Trans2Thai-${name}.apk"
 }
 
         }
-    }
+    
