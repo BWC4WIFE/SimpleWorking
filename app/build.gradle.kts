@@ -54,7 +54,7 @@ android {
    // Rename output APK files after evaluation (Kotlin DSL workaround)
 afterEvaluate {
     android.applicationVariants.all { variant ->
-        variant.outputs.all { output ->
+        variant.outputs.forEach { output ->
             val outputImpl = output as com.android.build.gradle.internal.api.BaseVariantOutputImpl
             outputImpl.outputFileName = "BWCTrans-${variant.name}.apk"
         }
