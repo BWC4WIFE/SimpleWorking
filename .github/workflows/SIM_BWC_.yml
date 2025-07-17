@@ -1,10 +1,8 @@
-name: Android Smart Build
+name: Android Bulletproof Build
 
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
-  pull_request:
     branches: [ main ]
 
 jobs:
@@ -17,9 +15,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate Gradle Wrapper
+      - name: Fix Gradle Wrapper Permissions
         run: |
-          ./gradlew --version || { echo "❌ Gradle wrapper corrupted"; exit 1; }
+          chmod +x gradlew
+          ./gradlew --version || { echo "::error::Gradle wrapper still broken after permission fix"; exit 1; }
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -27,20 +26,21 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Gradle Cache
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: wrapper
           cache-read-only: false
 
-      - name: Cache Android Build
+      - name: Cache Dependencies
         uses: actions/cache@v4
         with:
           path: |
-            ~/.android/build-cache
             ~/.gradle/caches
-            $GRADLE_USER_HOME/caches
-          key: android-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+            ~/.android/build-cache
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
@@ -56,10 +56,9 @@ jobs:
           touch ~/.android/repositories.cfg
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Build Debug APK
+      - name: Build with Gradle
         run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace --no-daemon
+          ./gradlew clean assembleDebug --stacktrace --no-daemon || { echo "::error::Build failed"; exit 1; }
 
       - name: Verify APK
         run: |
@@ -67,11 +66,10 @@ jobs:
             echo "::error::APK not found! Build failed silently."
             exit 1
           fi
-          echo "✅ APK generated successfully"
+          echo "✅ Build successful!"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
-        if: success()
         with:
           name: app-debug
           path: app/build/outputs/apk/debug/app-debug.apk
