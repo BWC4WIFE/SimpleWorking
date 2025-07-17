@@ -11,6 +11,15 @@ jobs:
       ANDROID_HOME: /usr/local/lib/android/sdk
       GRADLE_USER_HOME: ${{ github.workspace }}/.gradle
 
+       # This step manually deletes old build folders to ensure a clean state.
+      - name: Force Clean Workspace
+        run: |
+          echo "Deleting old build directories..."
+          rm -rf $GITHUB_WORKSPACE/*.*
+          rm -rf $GITHUB_WORKSPACE/app/build
+          rm -rf $GITHUB_WORKSPACE/.gradle
+          echo "Workspace cleaned."
+
     steps:
       - uses: actions/checkout@v4
 
@@ -18,12 +27,13 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '16'
+          java-version: '17'
 
       # This step manually deletes old build folders to ensure a clean state.
       - name: Force Clean Workspace
         run: |
           echo "Deleting old build directories..."
+          rm -rf 
           rm -rf $GITHUB_WORKSPACE/app/build
           rm -rf $GITHUB_WORKSPACE/.gradle
           echo "Workspace cleaned."
