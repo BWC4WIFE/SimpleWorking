@@ -2,7 +2,6 @@
 name: Android CI
 
 on:
-  
   workflow_dispatch:
 
 jobs:
@@ -21,52 +20,40 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
- # Clean all Gradle caches before starting
-      - name: Clean Gradle Caches
-        run: |
-          echo "Cleaning Gradle caches..."
-          rm -rf ~/.gradle/caches/
-          rm -rf ~/.gradle/wrapper/ # This line is important for wrapper cache
-          rm -rf ${{ github.workspace }}/.gradle/caches/
-          echo "Gradle caches cleaned."
+      # Cache Gradle dependencies to speed up subsequent builds
+      - name: Cache Gradle Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
-      # NEW: Cache Gradle Dependencies - TEMPORARILY DISABLED
-      # - name: Cache Gradle Dependencies
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: |
-      #       ~/.gradle/caches
-      #       ~/.gradle/wrapper
-      #     key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle*', '**/gradle-wrapper.properties') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-gradle-
-
-      # NEW: Cache Android SDK - TEMPORARILY DISABLED
-      # - name: Cache Android SDK
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: |
-      #       $ANDROID_HOME/platforms
-      #       $ANDROID_HOME/build-tools
-      #       $ANDROID_HOME/cmdline-tools
-      #       $ANDROID_HOME/ndk
-      #       ~/.android/cache # Cache AndroidX libraries/SDK build cache
-      #     key: ${{ runner.os }}-android-sdk-${{ hashFiles('**/build.gradle*', '**/gradle.properties') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-android-sdk-
+      # Cache Android SDK components to speed up subsequent builds
+      - name: Cache Android SDK
+        uses: actions/cache@v4
+        with:
+          path: |
+            $ANDROID_HOME/platforms
+            $ANDROID_HOME/build-tools
+            $ANDROID_HOME/cmdline-tools
+            $ANDROID_HOME/ndk
+            ~/.android/cache
+          key: ${{ runner.os }}-android-sdk-${{ hashFiles('**/build.gradle*', '**/gradle.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-android-sdk-
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.2'
-          # Note: This action has its own caching. Combining with actions/cache can be redundant.
-          # You might want to evaluate if you need both.
-
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          cache: true # This action also has its own caching for SDK components.
+          cache: true
           cmdline-tools-version: 'latest'
           build-tools-version: '34.0.0'
           platform-version: '34'
@@ -81,17 +68,14 @@ jobs:
       - name: Build with Gradle
         run: |
           chmod +x gradlew
-          ./gradlew clean assembleDebug --refresh-dependencies --stacktrace --info
-      
-      # NEW STEP: List contents of the APK output directory
+          ./gradlew clean build
+
+      # List the contents of the APK output directory to verify the build artifact
       - name: List Generated APK Files
         run: ls -l app/build/outputs/apk/debug/
 
-                  
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: BWCTrans-debug
-          path: app/build/outputs/apk/debug/BWCTrans-debug.apk
-
-           
+          path: app/build/outputs/apk/debug/app-debug.apk
