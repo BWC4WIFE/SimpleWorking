@@ -51,14 +51,7 @@ android {
         }
     }
     
-    // CORRECTED: Replaces the deprecated applicationVariants with the modern onVariants API
-    // and correctly re-implements the output file renaming.
-    onVariants { variant ->
-        variant.outputs.all { output ->
-            output.outputFileName = "BWCTrans-${variant.name}.apk"
-        }
-    }
-}
+   
 
 dependencies {
     // Core & UI
@@ -76,3 +69,14 @@ dependencies {
     // Compose - Using a BOM compatible with the specified compiler
     implementation(platform("androidx.compose:compose-bom:2024.02.02"))
     implementation("androidx.compose
+
+        }
+    }
+}
+// CORRECTED: Replaces the deprecated applicationVariants with the modern onVariants API
+    // and correctly re-implements the output file renaming.
+    onVariants { variant ->
+        variant.outputs.all { output ->
+            output.outputFileName = "BWCTrans-${variant.name}.apk"
+        }
+    }
