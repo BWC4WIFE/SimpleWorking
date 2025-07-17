@@ -72,11 +72,10 @@ dependencies {
 
         }
     }
-}
-// CORRECTED: Replaces the deprecated applicationVariants with the modern onVariants API
-    // and correctly re-implements the output file renaming.
-    onVariants { variant ->
+  onVariants { variant ->
         variant.outputs.all { output ->
             output.outputFileName = "BWCTrans-${variant.name}.apk"
+}
+
         }
     }
