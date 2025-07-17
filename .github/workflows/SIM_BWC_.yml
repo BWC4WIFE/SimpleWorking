@@ -81,7 +81,7 @@ jobs:
       - name: Build with Gradle
         run: |
           chmod +x gradlew
-          ./gradlew clean assembleDebug --refresh-dependencies --stacktrace
+          ./gradlew clean assembleDebug --refresh-dependencies --stacktrace --info
       
       # NEW STEP: List contents of the APK output directory
       - name: List Generated APK Files
