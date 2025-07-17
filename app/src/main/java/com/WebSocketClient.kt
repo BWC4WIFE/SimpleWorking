@@ -1,4 +1,3 @@
-//repair added logging//
 package com.BWCTrans
 
 import android.content.Context
