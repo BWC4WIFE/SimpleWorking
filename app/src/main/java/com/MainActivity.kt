@@ -262,9 +262,13 @@ class MainActivity : AppCompatActivity(), DevSettingsListener, UserSettingsListe
         }
     }
 
-    override fun onRequestPermission() {
+    private fun requestAudioPermission() {
         Log.i(TAG, "requestAudioPermission: Explicitly requesting audio permission.")
         requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+    }
+
+    override fun onRequestPermission() {
+        requestAudioPermission()
     }
 
 
@@ -288,11 +292,6 @@ class MainActivity : AppCompatActivity(), DevSettingsListener, UserSettingsListe
             stopAudio()
         }
         updateUI()
-    }
-
-    private fun showSettingsDialog() {
-        val userSettingsDialog = UserSettingsDialogFragment()
-        userSettingsDialog.show(supportFragmentManager, "UserSettingsDialog")
     }
 
 
