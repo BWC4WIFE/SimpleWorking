@@ -1,5 +1,4 @@
-# .github/workflows/android.yml
-name: Android CI
+name: Android Nuclear Clean CI
 
 on:
   workflow_dispatch:
@@ -7,48 +6,45 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-  env:
+    env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       GRADLE_USER_HOME: ${{ github.workspace }}/.gradle
 
-       # This step manually deletes old build folders to ensure a clean state.
-      - name: Force Clean Workspace
-        run: |
-          echo "Deleting old build directories..."
-          rm -rf $GITHUB_WORKSPACE/*.*
-          rm -rf $GITHUB_WORKSPACE/app/build
-          rm -rf $GITHUB_WORKSPACE/.gradle
-          echo "Workspace cleaned."
-
     steps:
-      - uses: actions/checkout@v4
+      # Step 1: NUKE everything (except .git folder to preserve repo)
+      - name: 🔥 Nuclear Clean Workspace
+        run: |
+          echo "⚠️ WARNING: DELETING EVERYTHING IN WORKSPACE ⚠️"
+          find "$GITHUB_WORKSPACE" -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          echo "Workspace nuked. Re-checking out code..."
 
-      - name: Set up JDK 16
+      # Step 2: Fresh checkout
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Get full git history
+
+      # Step 3: Clean any remaining Gradle caches
+      - name: Purge Gradle Cache
+        run: |
+          rm -rf ~/.gradle/caches/
+          rm -rf $GRADLE_USER_HOME/caches/
+
+      # Rest of your build steps...
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # This step manually deletes old build folders to ensure a clean state.
-      - name: Force Clean Workspace
-        run: |
-          echo "Deleting old build directories..."
-          rm -rf 
-          rm -rf $GITHUB_WORKSPACE/app/build
-          rm -rf $GITHUB_WORKSPACE/.gradle
-          echo "Workspace cleaned."
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.2'
-          # Disabling internal caching for this debug step
           cache-disabled: true
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          # Disabling internal caching for this debug step
           cache: false
           cmdline-tools-version: 'latest'
           build-tools-version: '34.0.0'
@@ -64,8 +60,7 @@ jobs:
       - name: Build with Gradle
         run: |
           chmod +x gradlew
-          # Run a clean build with extra info for debugging
-          ./gradlew clean build --stacktrace 
+          ./gradlew clean build --stacktrace --no-daemon
 
       - name: List Generated APK Files
         run: ls -l app/build/outputs/apk/debug/
