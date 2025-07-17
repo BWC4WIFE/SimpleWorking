@@ -1,4 +1,3 @@
-//AudioPlayer.kt
 package com.BWCTrans
 
 import android.media.AudioAttributes
