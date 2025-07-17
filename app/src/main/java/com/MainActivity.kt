@@ -1,4 +1,4 @@
-package com.BWCTrans
+package com.BWCTrans // <-- FIX: Use your new package name
 
 // --- IMPORTS ---
 import android.Manifest
@@ -12,14 +12,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.BWCTrans.databinding.ActivityMainBinding
+import com.BWCTrans.databinding.ActivityMainBinding // <-- FIX: This import MUST match your new package name
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.*
 import okhttp3.Response
 import java.lang.StringBuilder
-import com.BWCTrans.SettingsDialog.DevSettingsListener
-import com.BWCTrans.UserSettingsDialogFragment.UserSettingsListener
+import com.BWCTrans.SettingsDialog // <-- FIX: Use your new package name
+import com.BWCTrans.UserSettingsDialogFragment // <-- FIX: Use your new package name
 
 
 // --- DATA CLASSES ---
@@ -36,7 +36,7 @@ data class ServerContent(
     @SerializedName("modelTurn") val modelTurn: ModelTurn?,
     @SerializedName("inputTranscription") val inputTranscription: Transcription?,
     @SerializedName("outputTranscription") val outputTranscription: Transcription?,
-    @SerializedName("turnComplete") val turnComplete: Boolean? // Added to capture turn completion
+    @SerializedName("turnComplete") val turnComplete: Boolean?
 )
 data class ModelTurn(@SerializedName("parts") val parts: List<Part>?)
 data class Part(@SerializedName("text") val text: String?, @SerializedName("inlineData") val inlineData: InlineData?)
@@ -46,7 +46,7 @@ data class SetupComplete(val dummy: String? = null)
 data class SessionResumptionUpdate(@SerializedName("newHandle") val newHandle: String?, @SerializedName("resumable") val resumable: Boolean?)
 data class GoAway(@SerializedName("timeLeft") val timeLeft: String?)
 
-class MainActivity : AppCompatActivity(), DevSettingsListener, UserSettingsListener {
+class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, UserSettingsDialogFragment.UserSettingsListener {
 
     // --- COMPANION OBJECT ---
     companion object {
@@ -135,7 +135,6 @@ class MainActivity : AppCompatActivity(), DevSettingsListener, UserSettingsListe
         }
 
         binding.debugSettingsBtn.setOnClickListener {
-            // This now opens your ORIGINAL developer settings dialog
             val devSettingsDialog = SettingsDialog(this, this, getSharedPreferences("BWCTransPrefs", MODE_PRIVATE), models)
             devSettingsDialog.setOnDismissListener {
                 Log.d(TAG, "Developer SettingsDialog dismissed.")
@@ -256,7 +255,6 @@ class MainActivity : AppCompatActivity(), DevSettingsListener, UserSettingsListe
             initializeComponentsDependentOnAudio()
         } else {
             Log.i(TAG, "checkPermissions: Requesting RECORD_AUDIO permission.")
-            // --- MODIFIED: Show a more informative initial Toast ---
             Toast.makeText(this, "Microphone permission is needed for the translator.", Toast.LENGTH_LONG).show()
             requestAudioPermission()
         }
@@ -410,7 +408,6 @@ class MainActivity : AppCompatActivity(), DevSettingsListener, UserSettingsListe
         Log.i(TAG, "onForceConnect: Forcing reconnection.")
         Toast.makeText(this, "Forcing reconnection...", Toast.LENGTH_SHORT).show()
         teardownSession()
-        // Add a small delay before connecting to ensure resources are released
         mainScope.launch {
             delay(500)
             connect()
