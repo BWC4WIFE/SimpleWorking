@@ -10,13 +10,13 @@ jobs:
       ANDROID_HOME: /usr/local/lib/android/sdk
       GRADLE_USER_HOME: ${{ github.workspace }}/.gradle
 
-    steps:
-      # Step 1: NUKE everything (except .git folder to preserve repo)
-      - name: 🔥 Nuclear Clean Workspace
-        run: |
-          echo "⚠️ WARNING: DELETING EVERYTHING IN WORKSPACE ⚠️"
-          find "$GITHUB_WORKSPACE" -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
-          echo "Workspace nuked. Re-checking out code..."
+ #   steps:
+  #    # Step 1: NUKE everything (except .git folder to preserve repo)
+   #   - name: 🔥 Nuclear Clean Workspace
+    #    run: |
+     #     echo "⚠️ WARNING: DELETING EVERYTHING IN WORKSPACE ⚠️"
+      #    find "$GITHUB_WORKSPACE" -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+       #   echo "Workspace nuked. Re-checking out code..."
 
       # Step 2: Fresh checkout
       - uses: actions/checkout@v4
@@ -40,12 +40,12 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.2'
-          cache-disabled: true
+          cache-disabled: false
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          cache: false
+          cache: true
           cmdline-tools-version: 'latest'
           build-tools-version: '34.0.0'
           platform-version: '34'
@@ -60,7 +60,7 @@ jobs:
       - name: Build with Gradle
         run: |
           chmod +x gradlew
-          ./gradlew clean build --stacktrace --no-daemon
+          ./gradlew clean build --stacktrace
 
       - name: List Generated APK Files
         run: ls -l app/build/outputs/apk/debug/
