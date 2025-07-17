@@ -1,6 +1,6 @@
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android") version "1.9.20"
+    id("org.jetbrains.kotlin.android")
     id("kotlin-kapt")
 }
 
