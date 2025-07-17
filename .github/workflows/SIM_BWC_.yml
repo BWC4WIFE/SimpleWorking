@@ -20,40 +20,26 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # Cache Gradle dependencies to speed up subsequent builds
-      - name: Cache Gradle Dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      # Cache Android SDK components to speed up subsequent builds
-      - name: Cache Android SDK
-        uses: actions/cache@v4
-        with:
-          path: |
-            $ANDROID_HOME/platforms
-            $ANDROID_HOME/build-tools
-            $ANDROID_HOME/cmdline-tools
-            $ANDROID_HOME/ndk
-            ~/.android/cache
-          key: ${{ runner.os }}-android-sdk-${{ hashFiles('**/build.gradle*', '**/gradle.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-android-sdk-
+      # This step manually deletes old build folders to ensure a clean state.
+      - name: Force Clean Workspace
+        run: |
+          echo "Deleting old build directories..."
+          rm -rf $GITHUB_WORKSPACE/app/build
+          rm -rf $GITHUB_WORKSPACE/.gradle
+          echo "Workspace cleaned."
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.2'
+          # Disabling internal caching for this debug step
+          cache-disabled: true
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          cache: true
+          # Disabling internal caching for this debug step
+          cache: false
           cmdline-tools-version: 'latest'
           build-tools-version: '34.0.0'
           platform-version: '34'
@@ -68,9 +54,9 @@ jobs:
       - name: Build with Gradle
         run: |
           chmod +x gradlew
-          ./gradlew clean build
+          # Run a clean build with extra info for debugging
+          ./gradlew clean build --stacktrace --info
 
-      # List the contents of the APK output directory to verify the build artifact
       - name: List Generated APK Files
         run: ls -l app/build/outputs/apk/debug/
 
