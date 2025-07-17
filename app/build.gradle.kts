@@ -47,10 +47,17 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+}
+    }
+    
+    // --- THIS IS THE FIX ---
+    // Add this block to tell Gradle where your Kotlin files are.
+    sourceSets {
+        getByName("main") {
+            java.srcDirs("src/main/java")
         }
     }
 }
-
 dependencies {
     // Core & UI
     implementation("androidx.core:core-ktx:1.12.0")
