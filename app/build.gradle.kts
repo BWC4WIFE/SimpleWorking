@@ -36,13 +36,11 @@ android {
         jvmTarget = "17"
     }
     buildFeatures {
-        // We are enabling compose AND viewBinding, as your project uses both.
         compose = true
         viewBinding = true
         dataBinding = true
     }
     composeOptions {
-        // This version is compatible with Kotlin 1.9.22
         kotlinCompilerExtensionVersion = "1.5.8"
     }
     packaging {
@@ -50,10 +48,7 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-    
-
 }
-
 
 dependencies {
     // Core & UI
@@ -68,7 +63,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.activity:activity-compose:1.8.2")
 
-    // Compose - Using a BOM compatible with the specified compiler
+    // Compose
     implementation(platform("androidx.compose:compose-bom:2024.02.02"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
@@ -86,14 +81,12 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-    }
+}
 
-   // Rename output APK files after evaluation (Kotlin DSL workaround)
-afterEvaluate {
-    android.applicationVariants.all { variant ->
+androidComponents {
+    onVariants { variant ->
         variant.outputs.forEach { output ->
-            val outputImpl = output as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            outputImpl.outputFileName = "BWCTrans-${variant.name}.apk"
+            output.outputFileName.set("BWCTrans-${variant.name}.apk")
         }
     }
 }
