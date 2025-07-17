@@ -29,15 +29,10 @@ android {
         }
     }
 
-    
-    androidComponents {
-        onVariants { variant ->
-            variant.outputs.forEach { output ->
-                output.outputFileName.set("BWCTrans-${variant.name}.apk")
-            }
-        }
+    // Modern way to set the APK name
+    buildTypes.all {
+        setProperty("archivesBaseName", "BWCTrans-${name}")
     }
-
 }
 
 dependencies {
@@ -71,12 +66,4 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-}
-
-androidComponents {
-    onVariants { variant ->
-        variant.outputs.forEach { output ->
-            output.outputFileName.set("BWCTrans-${variant.name}.apk")
-        }
-    }
 }
