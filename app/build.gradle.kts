@@ -51,16 +51,9 @@ android {
         }
     }
     
-   // Rename output APK files after evaluation (Kotlin DSL workaround)
-afterEvaluate {
-    android.applicationVariants.all { variant ->
-        variant.outputs.forEach { output ->
-            val outputImpl = output as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            outputImpl.outputFileName = "BWCTrans-${variant.name}.apk"
-        }
-    }
+
 }
-}
+
 
 dependencies {
     // Core & UI
@@ -93,4 +86,14 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+    }
+
+   // Rename output APK files after evaluation (Kotlin DSL workaround)
+afterEvaluate {
+    android.applicationVariants.all { variant ->
+        variant.outputs.forEach { output ->
+            val outputImpl = output as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            outputImpl.outputFileName = "BWCTrans-${variant.name}.apk"
+        }
+    }
 }
