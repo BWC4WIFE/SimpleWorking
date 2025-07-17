@@ -28,6 +28,11 @@ android {
             )
         }
     }
+  buildFeatures {
+        // We are enabling compose AND dataBinding.
+        compose = true
+        dataBinding = true
+    }
 
     // Modern way to set the APK name
     buildTypes.all {
