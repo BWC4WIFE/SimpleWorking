@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android") version "1.9.23"
-    id ("org.jetbrains.kotlin.kapt") version "1.9.23"
+    id("org.jetbrains.kotlin.android") version "1.9.22"
+    id ("org.jetbrains.kotlin.kapt") version "1.9.22"
 }
 
 android {
@@ -32,11 +32,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_16
+        targetCompatibility = JavaVersion.VERSION_16
     }
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "16"
     }
     buildFeatures {
         dataBinding = true
