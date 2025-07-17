@@ -51,12 +51,15 @@ android {
         }
     }
     
-    // This is the correct, modern way to rename the output APK file.
-    onVariants { variant ->
+   // Rename output APK files after evaluation (Kotlin DSL workaround)
+afterEvaluate {
+    android.applicationVariants.all { variant ->
         variant.outputs.all { output ->
-            output.outputFileName = "BWCTrans-${variant.name}.apk"
+            val outputImpl = output as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            outputImpl.outputFileName = "BWCTrans-${variant.name}.apk"
         }
     }
+}
 }
 
 dependencies {
