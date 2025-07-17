@@ -54,7 +54,7 @@ android {
     // This is the correct, modern way to rename the output APK file.
     onVariants { variant ->
         variant.outputs.all { output ->
-            output.outputFileName = "Trans2Thai-${variant.name}.apk"
+            output.outputFileName = "BWCTrans-${variant.name}.apk"
         }
     }
 }
