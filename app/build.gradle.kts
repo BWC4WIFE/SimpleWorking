@@ -33,7 +33,6 @@ android {
     buildTypes.all {
         setProperty("archivesBaseName", "BWCTrans-${name}")
     }
-}
 
 dependencies {
     // Core & UI
@@ -78,4 +77,7 @@ kotlinOptions {
 
 kotlin {
     jvmToolchain(17)
+}
+
+
 }
