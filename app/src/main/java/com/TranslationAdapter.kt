@@ -1,4 +1,4 @@
-package com.Bwctrans
+package com.bwctrans
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
