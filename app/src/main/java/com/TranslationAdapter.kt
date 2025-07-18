@@ -1,9 +1,9 @@
-package com.BWCTrans
+package com.Bwctrans
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.BWCTrans.databinding.ItemTranslationBinding
+import com.Bwctrans.databinding.ItemTranslationBinding
 
 class TranslationAdapter : RecyclerView.Adapter<TranslationAdapter.TranslationViewHolder>() {
 
