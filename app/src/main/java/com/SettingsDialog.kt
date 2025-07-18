@@ -1,4 +1,4 @@
-package com.BWCTrans
+package com.Bwctrans
 
 // --- IMPORTS ---
 import android.app.Dialog
@@ -11,7 +11,7 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.SeekBar
-import com.BWCTrans.databinding.DialogSettingsBinding
+import com.Bwctrans.databinding.DialogSettingsBinding
 
 // --- CLASS & INTERFACE ---
 class SettingsDialog(
