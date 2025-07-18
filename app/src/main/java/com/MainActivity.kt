@@ -1,4 +1,4 @@
-package com.BWCTrans // <-- FIX: Use your new package name
+package com.Bwctrans // <-- FIX: Use your new package name
 
 // --- IMPORTS ---
 import android.Manifest
@@ -12,14 +12,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.BWCTrans.databinding.ActivityMainBinding // <-- FIX: This import MUST match your new package name
+import com.Bwctrans.databinding.ActivityMainBinding // <-- FIX: This import MUST match your new package name
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.*
 import okhttp3.Response
 import java.lang.StringBuilder
-import com.BWCTrans.SettingsDialog // <-- FIX: Use your new package name
-import com.BWCTrans.UserSettingsDialogFragment // <-- FIX: Use your new package name
+import com.Bwctrans.SettingsDialog // <-- FIX: Use your new package name
+import com.Bwctrans.UserSettingsDialogFragment // <-- FIX: Use your new package name
 
 
 // --- DATA CLASSES ---
@@ -135,7 +135,7 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
         }
 
         binding.debugSettingsBtn.setOnClickListener {
-            val devSettingsDialog = SettingsDialog(this, this, getSharedPreferences("BWCTransPrefs", MODE_PRIVATE), models)
+            val devSettingsDialog = SettingsDialog(this, this, getSharedPreferences("BwctransPrefs", MODE_PRIVATE), models)
             devSettingsDialog.setOnDismissListener {
                 Log.d(TAG, "Developer SettingsDialog dismissed.")
                 loadPreferences()
@@ -170,7 +170,7 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
     }
 
     private fun loadPreferences() {
-        val prefs = getSharedPreferences("BWCTransPrefs", MODE_PRIVATE)
+        val prefs = getSharedPreferences("BwctransPrefs", MODE_PRIVATE)
         selectedModel = prefs.getString("selected_model", models[0]) ?: models[0]
         sessionHandle = prefs.getString("session_handle", null)
         Log.d(TAG, "loadPreferences: Loaded model '$selectedModel' and session handle '$sessionHandle'")
@@ -184,7 +184,7 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
             parsedList.add(if (parts.size == 2) ApiVersion(parts[0].trim(), parts[1].trim()) else ApiVersion(itemString.trim(), itemString.trim()))
         }
         apiVersions = parsedList
-        selectedApiVersionObject = parsedList.firstOrNull { it.value == getSharedPreferences("BWCTransPrefs", MODE_PRIVATE).getString("api_version", null) } ?: parsedList.firstOrNull()
+        selectedApiVersionObject = parsedList.firstOrNull { it.value == getSharedPreferences("BwctransPrefs", MODE_PRIVATE).getString("api_version", null) } ?: parsedList.firstOrNull()
         Log.d(TAG, "loadApiVersionsFromResources: Loaded ${apiVersions.size} API versions. Selected: ${selectedApiVersionObject?.displayName}")
     }
 
@@ -196,15 +196,15 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
             if (parts.size == 2) parsedList.add(ApiKeyInfo(parts[0].trim(), parts[1].trim()))
         }
         apiKeys = parsedList
-        selectedApiKeyInfo = parsedList.firstOrNull { it.value == getSharedPreferences("BWCTransPrefs", MODE_PRIVATE).getString("api_key", null) } ?: apiKeys.firstOrNull()
+        selectedApiKeyInfo = parsedList.firstOrNull { it.value == getSharedPreferences("BwctransPrefs", MODE_PRIVATE).getString("api_key", null) } ?: apiKeys.firstOrNull()
         Log.d(TAG, "loadApiKeysFromResources: Loaded ${apiKeys.size} API keys. Selected: ${selectedApiKeyInfo?.displayName}")
     }
 
     private fun prepareNewClient() {
         webSocketClient?.disconnect()
         loadPreferences()
-        selectedApiVersionObject = apiVersions.firstOrNull { it.value == getSharedPreferences("BWCTransPrefs", MODE_PRIVATE).getString("api_version", null) } ?: apiVersions.firstOrNull()
-        selectedApiKeyInfo = apiKeys.firstOrNull { it.value == getSharedPreferences("BWCTransPrefs", MODE_PRIVATE).getString("api_key", null) } ?: apiKeys.firstOrNull()
+        selectedApiVersionObject = apiVersions.firstOrNull { it.value == getSharedPreferences("BwctransPrefs", MODE_PRIVATE).getString("api_version", null) } ?: apiVersions.firstOrNull()
+        selectedApiKeyInfo = apiKeys.firstOrNull { it.value == getSharedPreferences("BwctransPrefs", MODE_PRIVATE).getString("api_key", null) } ?: apiKeys.firstOrNull()
 
         webSocketClient = WebSocketClient(
             context = applicationContext,
@@ -341,7 +341,7 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
             response.sessionResumptionUpdate?.let {
                 if (it.resumable == true && it.newHandle != null) {
                     sessionHandle = it.newHandle
-                    getSharedPreferences("BWCTransPrefs", MODE_PRIVATE).edit().putString("session_handle", sessionHandle).apply()
+                    getSharedPreferences("BwctransPrefs", MODE_PRIVATE).edit().putString("session_handle", sessionHandle).apply()
                     Log.i(TAG, "Session handle updated and saved.")
                 }
             }
@@ -417,7 +417,7 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
 
     // --- HELPER & UTILITY FUNCTIONS ---
     private fun getVadSensitivity(): Int {
-        val sensitivity = getSharedPreferences("BWCTransPrefs", MODE_PRIVATE).getInt("vad_sensitivity_ms", 800)
+        val sensitivity = getSharedPreferences("BwctransPrefs", MODE_PRIVATE).getInt("vad_sensitivity_ms", 800)
         Log.d(TAG, "getVadSensitivity: VAD sensitivity is $sensitivity ms.")
         return sensitivity
     }
