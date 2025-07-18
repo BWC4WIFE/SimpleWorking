@@ -8,8 +8,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
+import android.widget.RadioButton
 import android.widget.SeekBar
 import com.bwctrans.databinding.DialogSettingsBinding
 
@@ -109,32 +108,37 @@ class SettingsDialog(
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        // Model Spinner
-        binding.modelSpinnerSettings.adapter = ArrayAdapter(context, android.R.layout.simple_spinner_item, models)
-        val modelPosition = models.indexOf(selectedModel)
-        if (modelPosition != -1) {
-            binding.modelSpinnerSettings.setSelection(modelPosition)
-        }
-        binding.modelSpinnerSettings.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                selectedModel = models[position]
+        // Model RadioGroup
+        models.forEach { model ->
+            val radioButton = RadioButton(context).apply {
+                text = model
+                tag = model
+                isChecked = model == selectedModel
             }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+            binding.modelRadioGroup.addView(radioButton)
         }
 
-        // API Version Spinner
-        binding.apiVersionSpinner.adapter = ArrayAdapter(context, android.R.layout.simple_spinner_item, apiVersionsList)
-        selectedApiVersion?.let {
-            val apiVersionPosition = apiVersionsList.indexOf(it)
-            if (apiVersionPosition != -1) binding.apiVersionSpinner.setSelection(apiVersionPosition)
+        binding.modelRadioGroup.setOnCheckedChangeListener { group, checkedId ->
+            val radioButton = group.findViewById<RadioButton>(checkedId)
+            selectedModel = radioButton.tag.toString()
+            binding.modelManualEditText.setText(selectedModel)
         }
 
-        // API Key Spinner
-        binding.apiKeySpinner.adapter = ArrayAdapter(context, android.R.layout.simple_spinner_item, apiKeysList)
-        selectedApiKeyInfo?.let {
-            val apiKeyPosition = apiKeysList.indexOf(it)
-            if (apiKeyPosition != -1) binding.apiKeySpinner.setSelection(apiKeyPosition)
+        // API Version RadioGroup
+        apiVersionsList.forEach { apiVersion ->
+            val radioButton = RadioButton(context).apply {
+                text = apiVersion.displayName
+                tag = apiVersion
+                isChecked = apiVersion == selectedApiVersion
+            }
+            binding.apiVersionRadioGroup.addView(radioButton)
         }
+
+        binding.apiVersionRadioGroup.setOnCheckedChangeListener { group, checkedId ->
+            val radioButton = group.findViewById<RadioButton>(checkedId)
+            selectedApiVersion = radioButton.tag as ApiVersion
+        }
+
 
         binding.debugOverlaySwitch.isChecked = prefs.getBoolean("show_debug_overlay", false)
 
@@ -142,19 +146,10 @@ class SettingsDialog(
         binding.saveSettingsBtn.setOnClickListener {
             prefs.edit().apply {
                 putInt("vad_sensitivity_ms", binding.vadSensitivity.progress)
-                putString("selected_model", selectedModel)
-
+                putString("api_key", binding.apiKeyManualEditText.text.toString())
+                putString("selected_model", binding.modelManualEditText.text.toString())
                 putBoolean("show_debug_overlay", binding.debugOverlaySwitch.isChecked)
-
-                if (binding.apiVersionSpinner.selectedItemPosition >= 0) {
-                    val selectedApiVersionFromSpinner = apiVersionsList[binding.apiVersionSpinner.selectedItemPosition]
-                    putString("api_version", selectedApiVersionFromSpinner.value)
-                }
-
-                if (binding.apiKeySpinner.selectedItemPosition >= 0) {
-                    val selectedApiKeyFromSpinner = apiKeysList[binding.apiKeySpinner.selectedItemPosition]
-                    putString("api_key", selectedApiKeyFromSpinner.value)
-                }
+                selectedApiVersion?.let { putString("api_version", it.value) }
                 apply()
             }
             dismiss()
