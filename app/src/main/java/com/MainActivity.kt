@@ -12,7 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.Bwctrans.databinding.ActivityMainBinding // <-- FIX: This import MUST match your new package name
+import com.bwctrans.databinding.ActivityMainBinding // <-- FIX: This import MUST match your new package name
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.*
