@@ -449,11 +449,11 @@ val serverContent = response.serverContent
 private fun updateUI() {
         binding.micBtn.setImageResource(if (isListening) R.drawable.ic_stop else R.drawable.ic_mic)
 
-        binding.statusText.text = when {
-            !isSessionActive -> "Status: Disconnected"
-            !isServerReady -> "Status: Connecting..."
-            isListening -> "Listening..."
-            else -> "Status: Ready"
+         binding.statusText.text = when {
+        !isSessionActive -> "Status: Disconnected\nTap the microphone to connect"
+        !isServerReady -> "Status: Connecting...\nWaiting for server configuration"
+        isListening -> "Status: Listening...\nTap the microphone to stop"
+        else -> "Status: Ready\nTap the microphone to speak"
         }
         binding.infoText.visibility = if (translationAdapter.itemCount == 0) View.VISIBLE else View.GONE
         
