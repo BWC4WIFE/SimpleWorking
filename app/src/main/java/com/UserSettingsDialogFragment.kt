@@ -6,6 +6,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import android.app.Dialog
+import android.widget.FrameLayout
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.bwctrans.databinding.DialogUserSettingsBinding // IMPORTANT: Use the new binding class
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import android.Manifest
