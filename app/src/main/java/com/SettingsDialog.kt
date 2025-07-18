@@ -11,7 +11,7 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.SeekBar
-import com.Bwctrans.databinding.DialogSettingsBinding
+import com.bwctrans.databinding.DialogSettingsBinding
 
 // --- CLASS & INTERFACE ---
 class SettingsDialog(
