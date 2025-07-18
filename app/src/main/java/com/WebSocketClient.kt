@@ -26,9 +26,9 @@ class WebSocketClient(
     private val onOpen: () -> Unit,
     private val onMessage: (String) -> Unit,
     private val onClosing: (Int, String) -> Unit,
-    // FIXED: The signature now correctly accepts a Throwable and a nullable Response
     private val onFailure: (Throwable, Response?) -> Unit,
-    private val onSetupComplete: () -> Unit
+    private val onSetupComplete: () -> Unit,
+    private val onLogToOverlay: (String) -> Unit // NEW: Callback for logging to overlay
 ) {
     private var webSocket: WebSocket? = null
     @Volatile private var isSetupComplete = false
@@ -39,15 +39,15 @@ class WebSocketClient(
     private var logFileWriter: PrintWriter? = null
     private lateinit var logFile: File
 
-    // The HttpLoggingInterceptor is now configured to use our custom file logger
     private val client = OkHttpClient.Builder()
         .readTimeout(0, TimeUnit.MILLISECONDS)
         .pingInterval(30, TimeUnit.SECONDS)
         .addInterceptor(HttpLoggingInterceptor(object : HttpLoggingInterceptor.Logger {
             override fun log(message: String) {
-                // Log to both Logcat and the file
+                // Log to both Logcat and the file, and send to overlay if enabled
                 Log.d(TAG, "OkHttp: $message")
                 logFileWriter?.println("OkHttp: $message")
+                onLogToOverlay("OkHttp: $message") // NEW: Send to overlay
             }
         }).apply {
             level = HttpLoggingInterceptor.Level.BODY
@@ -144,7 +144,7 @@ class WebSocketClient(
         }
         val setupConfig = mutableMapOf<String, Any>(
             "model" to "models/$modelName",
-            "generationConfig" to mapOf("responseModalities" to listOf("AUDIO")), // <-- ADD THIS LINE
+            "generationConfig" to mapOf("responseModalities" to listOf("AUDIO")),
             "systemInstruction" to mapOf("parts" to instructionParts),
             "inputAudioTranscription" to emptyMap<String, Any>(),
             "outputAudioTranscription" to emptyMap<String, Any>(),
@@ -160,6 +160,7 @@ class WebSocketClient(
         val configJson = gson.toJson(fullConfig)
         Log.d(TAG, "Sending config message: ${configJson.take(500)}...")
         logFileWriter?.println("OUTGOING CONFIG: $configJson")
+        onLogToOverlay("OUTGOING CONFIG: ${configJson.take(100)}...") // NEW: Log to overlay
         webSocket?.send(configJson)
     }
 
@@ -178,9 +179,9 @@ class WebSocketClient(
             logFileWriter = PrintWriter(FileWriter(logFile, true), true)
             logFileWriter?.println("--- New WebSocket Session Log: ${java.util.Date()} ---")
             Log.i(TAG, "Log file initialized at: ${logFile.absolutePath}")
+            onLogToOverlay("Log file initialized: ${logFile.name}") // NEW: Log to overlay
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize log file", e)
-            // FIXED: Pass null for the response since there isn't one
             onFailure(e, null)
             return
         }
@@ -189,6 +190,7 @@ class WebSocketClient(
         val requestUrl = "wss://$HOST/ws/google.ai.generativelanguage.$apiVersion.GenerativeService.BidiGenerateContent?key=$apiKey"
         Log.d(TAG, "Connection URL: $requestUrl")
         logFileWriter?.println("CONNECTION_URL: $requestUrl")
+        onLogToOverlay("Connecting to: $requestUrl") // NEW: Log to overlay
 
         val request = Request.Builder().url(requestUrl).build()
 
@@ -197,6 +199,7 @@ class WebSocketClient(
                 scope.launch {
                     Log.i(TAG, "WebSocket connection opened. Response: ${response.code}")
                     logFileWriter?.println("--> WEB_SOCKET_OPENED (HTTP Status: ${response.code})")
+                    onLogToOverlay("WebSocket OPENED (HTTP Status: ${response.code})") // NEW: Log to overlay
                     logFileWriter?.println("--- HTTP Response Headers ---")
                     response.headers.forEach { header ->
                         logFileWriter?.println("${header.first}: ${header.second}")
@@ -212,6 +215,7 @@ class WebSocketClient(
                 scope.launch {
                     Log.d(TAG, "INCOMING TEXT FRAME: ${text.take(500)}...")
                     logFileWriter?.println("--> INCOMING (TEXT): $text")
+                    onLogToOverlay("INCOMING TEXT: ${text.take(100)}...") // NEW: Log to overlay
                     processIncomingMessage(text)
                 }
             }
@@ -221,6 +225,7 @@ class WebSocketClient(
                     val text = bytes.utf8()
                     Log.d(TAG, "INCOMING BYTES FRAME (decoded): ${text.take(500)}...")
                     logFileWriter?.println("--> INCOMING (BYTES): $text")
+                    onLogToOverlay("INCOMING BYTES: ${text.take(100)}...") // NEW: Log to overlay
                     processIncomingMessage(text)
                 }
             }
@@ -229,51 +234,50 @@ class WebSocketClient(
                 scope.launch {
                     Log.w(TAG, "WebSocket closing: $code - $reason")
                     logFileWriter?.println("--> WEB_SOCKET_CLOSING: Code=$code, Reason=$reason")
+                    onLogToOverlay("WebSocket CLOSING: Code=$code, Reason=$reason") // NEW: Log to overlay
                     cleanup()
                     this@WebSocketClient.onClosing(code, reason)
                 }
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-    scope.launch {
-        Log.e(TAG, "WebSocket failure", t)
-
-        // Log the response code and a relevant message based on the Throwable
-        val logMessage = "--> WEB_SOCKET_FAILURE: ${t.message}" +
-                         (if (response != null) ", ResponseCode=${response.code}" else "")
-        logFileWriter?.println(logMessage)
-        logFileWriter?.println("--> StackTrace: ${t.stackTraceToString()}")
-
-        cleanup()
-        // The MainActivity's onFailure handler already checks response.code for a specific message
-        this@WebSocketClient.onFailure(t, response)
-    }
-}
+                scope.launch {
+                    Log.e(TAG, "WebSocket failure", t)
+                    val logMessage = "--> WEB_SOCKET_FAILURE: ${t.message}" +
+                            (if (response != null) ", ResponseCode=${response.code}" else "")
+                    logFileWriter?.println(logMessage)
+                    onLogToOverlay("WebSocket FAILURE: ${t.message} (Code: ${response?.code ?: "N/A"})") // NEW: Log to overlay
+                    logFileWriter?.println("--> StackTrace: ${t.stackTraceToString()}")
+                    cleanup()
+                    this@WebSocketClient.onFailure(t, response)
+                }
+            }
         })
     }
 
     private fun processIncomingMessage(messageText: String) {
         try {
-            // Check for setupComplete specifically, as it's a key state change
             if (messageText.contains("\"setupComplete\"")) {
                 if (!isSetupComplete) {
                     Log.i(TAG, "Server setup is complete.")
                     logFileWriter?.println("--> SERVER_SETUP_COMPLETE")
+                    onLogToOverlay("Server SETUP COMPLETE") // NEW: Log to overlay
                     isSetupComplete = true
-                    onSetupComplete() // Notify MainActivity
+                    onSetupComplete()
                 }
             }
-            // Pass all messages to MainActivity for general processing
             onMessage(messageText)
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing incoming message frame: '${messageText.take(100)}'", e)
             logFileWriter?.println("!! ERROR PARSING INCOMING MESSAGE: ${e.message}")
+            onLogToOverlay("ERROR PARSING MSG: ${e.message}") // NEW: Log to overlay
         }
     }
 
     fun sendAudio(audioData: ByteArray) {
         if (!isReady()) {
             Log.w(TAG, "sendAudio called but not ready. isConnected=$isConnected, isSetupComplete=$isSetupComplete")
+            onLogToOverlay("WARN: sendAudio called but not ready.") // NEW: Log to overlay
             return
         }
         scope.launch {
@@ -290,10 +294,13 @@ class WebSocketClient(
                 val messageToSend = gson.toJson(realtimeInput)
                 Log.d(TAG, "OUTGOING AUDIO FRAME (length: ${audioData.size})")
                 logFileWriter?.println("<-- OUTGOING (AUDIO): length=${audioData.size}, base64_length=${base64Audio.length}")
+                // Optionally, log audio data to overlay, but be mindful of performance/spam
+                // onLogToOverlay("OUTGOING AUDIO: ${audioData.size} bytes")
                 webSocket?.send(messageToSend)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to send audio", e)
                 logFileWriter?.println("!! ERROR SENDING AUDIO: ${e.message}")
+                onLogToOverlay("ERROR SENDING AUDIO: ${e.message}") // NEW: Log to overlay
             }
         }
     }
@@ -318,6 +325,7 @@ class WebSocketClient(
         isConnected = false
         isSetupComplete = false
         Log.i(TAG, "Cleanup complete.")
+        onLogToOverlay("WebSocket CLEANUP COMPLETE") // NEW: Log to overlay
     }
 
     fun isReady(): Boolean = isConnected && isSetupComplete
