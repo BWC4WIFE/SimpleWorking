@@ -100,6 +100,19 @@
                 android:layout_height="wrap_content"
                 android:text="Save"/>
         </LinearLayout>
+<com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/debugOverlaySwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Show Debug Overlay"
+            android:textAppearance="?attr/textAppearanceBodyLarge"/>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="24dp"
+            android:gravity="end">
     </LinearLayout>
 </layout>
