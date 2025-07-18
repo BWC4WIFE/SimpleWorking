@@ -91,8 +91,8 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Trans2Thai-APK
-          path: app/build/outputs/apk/debug/Trans2Thai-debug.apk
+          name: BWCTrans-APK
+          path: app/build/outputs/apk/debug/BWCTrans-debug.apk
 
         
 
