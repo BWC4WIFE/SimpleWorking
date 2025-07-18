@@ -45,18 +45,6 @@
                     android:clickable="true"
                     android:focusable="true" />
 
-                <ImageView
-                    android:id="@+id/disconnectBtn"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:src="@drawable/ic_stop"
-                    android:layout_gravity="end"
-                    android:padding="12dp"
-                    android:contentDescription="Disconnect"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:clickable="true"
-                    android:focusable="true" />
-
             </com.google.android.material.appbar.MaterialToolbar>
         </com.google.android.material.appbar.AppBarLayout>
 
@@ -68,7 +56,7 @@
             <ScrollView
                 android:id="@+id/debugOverlayScroll"
                 android:layout_width="0dp"
-                android:layout_height="240dp" tools:layout_height="240dp"
+                android:layout_height="240dp"
                 android:background="#80000000"
                 android:padding="4dp"
                 android:visibility="gone"
@@ -116,8 +104,8 @@
                 android:src="@drawable/ic_mic"
                 app:fabSize="auto"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/debugSettingsBtn" />
+                app:layout_constraintEnd_toStartOf="@+id/debugSettingsBtn"
+                app:layout_constraintStart_toStartOf="parent" />
 
              <TextView
                 android:id="@+id/statusText"
@@ -141,8 +129,16 @@
                 android:layout_margin="16dp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/micBtn"
+                 />
+            <Button
+                android:id="@+id/connectDisconnectBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Connect"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                />
+                android:layout_margin="16dp"/>
+
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
