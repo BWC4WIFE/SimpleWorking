@@ -1,4 +1,4 @@
-package com.Bwctrans
+package com.bwctrans
 
 import android.media.AudioAttributes
 import android.media.AudioFormat
