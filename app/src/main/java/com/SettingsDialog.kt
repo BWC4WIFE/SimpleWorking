@@ -136,11 +136,15 @@ class SettingsDialog(
             if (apiKeyPosition != -1) binding.apiKeySpinner.setSelection(apiKeyPosition)
         }
 
+        binding.debugOverlaySwitch.isChecked = prefs.getBoolean("show_debug_overlay", false)
+
         // Save Button Listener
         binding.saveSettingsBtn.setOnClickListener {
             prefs.edit().apply {
                 putInt("vad_sensitivity_ms", binding.vadSensitivity.progress)
                 putString("selected_model", selectedModel)
+
+                putBoolean("show_debug_overlay", binding.debugOverlaySwitch.isChecked)
 
                 if (binding.apiVersionSpinner.selectedItemPosition >= 0) {
                     val selectedApiVersionFromSpinner = apiVersionsList[binding.apiVersionSpinner.selectedItemPosition]
