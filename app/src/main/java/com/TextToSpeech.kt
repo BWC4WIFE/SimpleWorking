@@ -1,5 +1,5 @@
 // Create a new file, e.g., in a new 'output' package: output/TextToSpeechManager.kt
-package com.BWCTrans.output
+package com.Bwctrans.output
 
 import android.content.Context
 import android.speech.tts.TextToSpeech
