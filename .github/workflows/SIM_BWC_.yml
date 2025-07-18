@@ -38,7 +38,7 @@ jobs:
 
       - name: Build with Debug Info
         run: |
-          ./gradlew assembleDebug --stacktrace --info \
-          --no-daemon \
-          -Pandroid.debug.obsoleteApi=true \
-          -Pandroid.databinding.enableV2=true
+          ./gradlew assembleDebug --stacktrace
+        #  --no-daemon \
+        #  -Pandroid.debug.obsoleteApi=true \
+        #  -Pandroid.databinding.enableV2=true
