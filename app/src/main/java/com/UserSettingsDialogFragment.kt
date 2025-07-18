@@ -10,7 +10,6 @@ import android.app.Dialog
 import android.widget.FrameLayout
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.bwctrans.databinding.DialogUserSettingsBinding
-import com.google.android.material.bottomsheet.BottomSheetBehavior// IMPORTANT: Use the new binding class
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import android.Manifest
 import androidx.core.content.ContextCompat
