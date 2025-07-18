@@ -1,4 +1,4 @@
-package com.BWCTrans
+package com.Bwctrans
 
 import android.Manifest
 import android.content.Context
