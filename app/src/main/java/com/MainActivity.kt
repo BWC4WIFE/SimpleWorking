@@ -154,13 +154,14 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
         }
 
         // NEW: Disconnect button click listener
-        binding.disconnectBtn.setOnClickListener {
-            Log.d(TAG, "Disconnect button clicked.")
+        binding.connectDisconnectBtn.setOnClickListener {
             if (isSessionActive) {
+                Log.d(TAG, "Disconnect button clicked.")
                 teardownSession(reconnect = false)
                 Toast.makeText(this, "Disconnected.", Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(this, "Not connected.", Toast.LENGTH_SHORT).show()
+                Log.d(TAG, "Connect button clicked.")
+                connect()
             }
         }
 
@@ -168,12 +169,6 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
             Log.d(TAG, "Mic button clicked.")
             handleMasterButton()
         }
-
-        // Removed history button listener as it's replaced by disconnectBtn in XML
-        // binding.historyBtn.setOnClickListener {
-        //     Toast.makeText(this, "History view coming soon!", Toast.LENGTH_SHORT).show()
-        // }
-
         updateUI()
         Log.d(TAG, "setupUI: All new UI components initialized.")
     }
@@ -492,7 +487,7 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
         binding.debugOverlayScroll.visibility = if (prefs.getBoolean("show_debug_overlay", false)) View.VISIBLE else View.GONE
         
         // NEW: Disconnect button state
-        binding.disconnectBtn.isEnabled = isSessionActive
+        binding.connectDisconnectBtn.text = if (isSessionActive) "Disconnect" else "Connect"
     }
 
     private fun updateStatus(line1: String, line2: String = "") {
