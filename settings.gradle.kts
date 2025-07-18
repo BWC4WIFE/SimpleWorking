@@ -21,5 +21,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "BWCTrans"
+rootProject.name = "bwctrans"
 include(":app")
