@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.Bwctrans"
+    namespace = "com.bwctrans"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.Bwctrans"
+        applicationId = "com.bwctrans"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
