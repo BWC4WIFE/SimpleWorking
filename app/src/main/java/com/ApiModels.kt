@@ -1,4 +1,4 @@
-package com.Bwctrans
+package com.bwctrans
 
 // Data class for API Versions (e.g., "v1alpha (Preview)" and "v1alpha")
 data class ApiVersion(
