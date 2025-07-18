@@ -1,6 +1,6 @@
 package com.bwctrans
 
-// ===== IMPORTS SECTION =====
+// --- IMPORTS ---
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -18,10 +18,9 @@ import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.*
 import okhttp3.Response
 import java.lang.StringBuilder
-import com.bwctrans.SettingsDialog
-import com.bwctrans.UserSettingsDialogFragment
 
-// ===== DATA CLASSES SECTION =====
+
+// --- DATA CLASSES ---
 data class ServerResponse(
     @SerializedName("serverContent") val serverContent: ServerContent?,
     @SerializedName("inputTranscription") val inputTranscription: Transcription?,
@@ -45,15 +44,14 @@ data class SetupComplete(val dummy: String? = null)
 data class SessionResumptionUpdate(@SerializedName("newHandle") val newHandle: String?, @SerializedName("resumable") val resumable: Boolean?)
 data class GoAway(@SerializedName("timeLeft") val timeLeft: String?)
 
-// ===== MAIN ACTIVITY CLASS =====
 class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, UserSettingsDialogFragment.UserSettingsListener {
 
-    // ===== COMPANION OBJECT =====
+    // --- COMPANION OBJECT ---
     companion object {
         private const val TAG = "MainActivity"
     }
 
-    // ===== PROPERTIES & VIEW BINDING =====
+    // --- PROPERTIES & VIEWS ---
     private lateinit var binding: ActivityMainBinding
     private lateinit var audioHandler: AudioHandler
     private var webSocketClient: WebSocketClient? = null
@@ -63,19 +61,18 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
     private val gson = Gson()
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
 
-    // ===== STATE MANAGEMENT =====
+
+    // --- STATE & CONFIGURATION ---
     private var sessionHandle: String? = null
+    private val outputTranscriptBuffer = StringBuilder()
     @Volatile private var isListening = false
     @Volatile private var isSessionActive = false
     @Volatile private var isServerReady = false
-    private val outputTranscriptBuffer = StringBuilder()
+
     private val userInputBuffer = StringBuilder()
     private val modelTranslationBuffer = StringBuilder()
     private var lastSpeakerIsUser: Boolean? = null
-    private var reconnectAttempts = 0
-    private val maxReconnectAttempts = 5
 
-    // ===== CONFIGURATION =====
     private val models = listOf("gemini-2.5-flash-preview-native-audio-dialog", "gemini-2.0-flash-live-001", "gemini-2.5-flash-live-preview")
     private var selectedModel: String = models[0]
     private var apiVersions: List<ApiVersion> = emptyList()
@@ -83,7 +80,11 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
     private var selectedApiVersionObject: ApiVersion? = null
     private var selectedApiKeyInfo: ApiKeyInfo? = null
 
-    // ===== ACTIVITY LIFECYCLE =====
+    private var reconnectAttempts = 0
+    private val maxReconnectAttempts = 5
+
+
+    // --- ACTIVITY LIFECYCLE ---
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -111,6 +112,7 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
         binding.debugOverlayScroll.visibility = if (prefs.getBoolean("show_debug_overlay", false)) View.VISIBLE else View.GONE
     }
 
+
     override fun onDestroy() {
         super.onDestroy()
         Log.w(TAG, "onDestroy: Activity is being destroyed.")
@@ -119,28 +121,8 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
         mainScope.cancel()
     }
 
-    // ===== PERMISSION HANDLING =====
-    private fun checkPermissions() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            Log.i(TAG, "checkPermissions: RECORD_AUDIO permission already granted.")
-            initializeComponentsDependentOnAudio()
-        } else {
-            Log.i(TAG, "checkPermissions: Requesting RECORD_AUDIO permission.")
-            Toast.makeText(this, "Microphone permission is needed for the translator.", Toast.LENGTH_LONG).show()
-            requestAudioPermission()
-        }
-    }
 
-    private fun requestAudioPermission() {
-        Log.i(TAG, "requestAudioPermission: Explicitly requesting audio permission.")
-        requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-    }
-
-    override fun onRequestPermission() {
-        requestAudioPermission()
-    }
-
-    // ===== UI SETUP & MANAGEMENT =====
+    // --- INITIALIZATION & SETUP ---
     private fun setupUI() {
         setSupportActionBar(binding.topAppBar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -150,7 +132,7 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
 
         translationAdapter = TranslationAdapter()
         binding.transcriptLog.layoutManager = LinearLayoutManager(this).apply {
-            reverseLayout = true
+            reverseLayout = true // Show new items at the bottom
         }
         binding.transcriptLog.adapter = translationAdapter
 
@@ -171,37 +153,41 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
             devSettingsDialog.show()
         }
 
+        // NEW: Disconnect button click listener
+        binding.disconnectBtn.setOnClickListener {
+            Log.d(TAG, "Disconnect button clicked.")
+            if (isSessionActive) {
+                teardownSession(reconnect = false)
+                Toast.makeText(this, "Disconnected.", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Not connected.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         binding.micBtn.setOnClickListener {
             Log.d(TAG, "Mic button clicked.")
             handleMasterButton()
         }
 
-        binding.historyBtn.setOnClickListener {
-            Toast.makeText(this, "History view coming soon!", Toast.LENGTH_SHORT).show()
-        }
+        // Removed history button listener as it's replaced by disconnectBtn in XML
+        // binding.historyBtn.setOnClickListener {
+        //     Toast.makeText(this, "History view coming soon!", Toast.LENGTH_SHORT).show()
+        // }
 
         updateUI()
         Log.d(TAG, "setupUI: All new UI components initialized.")
     }
 
-    private fun updateUI() {
-        binding.micBtn.setImageResource(if (isListening) R.drawable.ic_stop else R.drawable.ic_mic)
-
-        binding.statusText.text = when {
-            !isSessionActive -> "Status: Disconnected\nTap the microphone to connect"
-            !isServerReady -> "Status: Connecting...\nWaiting for server configuration"
-            isListening -> "Status: Listening...\nTap the microphone to stop"
-            else -> "Status: Ready\nTap the microphone to speak"
+    private fun initializeComponentsDependentOnAudio() {
+        if (!::audioHandler.isInitialized) {
+            audioHandler = AudioHandler(this) { audioData ->
+                webSocketClient?.sendAudio(audioData)
+            }
+            Log.i(TAG, "AudioHandler initialized.")
         }
-        binding.toolbarInfoText.text = "Model: ${selectedModel}\nAPI: ${selectedApiVersionObject?.value ?: "N/A"}"
-        binding.infoText.visibility = if (translationAdapter.itemCount == 0) View.VISIBLE else View.GONE
-        binding.debugSettingsBtn.isEnabled = true
-        binding.micBtn.isEnabled = (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
-        val prefs = getSharedPreferences("BwctransPrefs", MODE_PRIVATE)
-        binding.debugOverlayScroll.visibility = if (prefs.getBoolean("show_debug_overlay", false)) View.VISIBLE else View.GONE
+        prepareNewClient()
     }
 
-    // ===== CONFIGURATION MANAGEMENT =====
     private fun loadPreferences() {
         val prefs = getSharedPreferences("BwctransPrefs", MODE_PRIVATE)
         selectedModel = prefs.getString("selected_model", models[0]) ?: models[0]
@@ -233,23 +219,6 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
         Log.d(TAG, "loadApiKeysFromResources: Loaded ${apiKeys.size} API keys. Selected: ${selectedApiKeyInfo?.displayName}")
     }
 
-    private fun getVadSensitivity(): Int {
-        val sensitivity = getSharedPreferences("BwctransPrefs", MODE_PRIVATE).getInt("vad_sensitivity_ms", 800)
-        Log.d(TAG, "getVadSensitivity: VAD sensitivity is $sensitivity ms.")
-        return sensitivity
-    }
-
-    // ===== WEBSOCKET & AUDIO MANAGEMENT =====
-    private fun initializeComponentsDependentOnAudio() {
-        if (!::audioHandler.isInitialized) {
-            audioHandler = AudioHandler(this) { audioData ->
-                webSocketClient?.sendAudio(audioData)
-            }
-            Log.i(TAG, "AudioHandler initialized.")
-        }
-        prepareNewClient()
-    }
-
     private fun prepareNewClient() {
         webSocketClient?.disconnect()
         loadPreferences()
@@ -273,6 +242,9 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
             onMessage = { text -> mainScope.launch { processServerMessage(text) } },
             onClosing = { code, reason -> mainScope.launch {
                 Log.w(TAG, "WebSocket onClosing callback received: Code=$code, Reason=$reason")
+                // NEW: Display reason for non-normal closures
+                val displayReason = if (code != 1000) " (Reason: $reason)" else ""
+                showError("Connection closed: $code$displayReason")
                 teardownSession(reconnect = true)
             } },
             onFailure = { t, response -> mainScope.launch {
@@ -292,11 +264,62 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
                 isServerReady = true
                 updateStatus("Ready to listen")
                 updateUI()
-            } }
+            } },
+            onLogToOverlay = { message -> mainScope.launch { logToOverlay(message) } } // NEW: Pass the logToOverlay callback
         )
         Log.i(TAG, "New WebSocketClient prepared.")
     }
 
+
+    // --- PERMISSION HANDLING ---
+    private fun checkPermissions() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            Log.i(TAG, "checkPermissions: RECORD_AUDIO permission already granted.")
+            initializeComponentsDependentOnAudio()
+        } else {
+            Log.i(TAG, "checkPermissions: Requesting RECORD_AUDIO permission.")
+            Toast.makeText(this, "Microphone permission is needed for the translator.", Toast.LENGTH_LONG).show()
+            requestAudioPermission()
+        }
+    }
+
+    private fun requestAudioPermission() {
+        Log.i(TAG, "requestAudioPermission: Explicitly requesting audio permission.")
+        requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+    }
+
+    override fun onRequestPermission() {
+        requestAudioPermission()
+    }
+
+
+    // --- UI & EVENT HANDLERS ---
+    private fun handleMasterButton() {
+        // If not active, clicking mic button connects
+        if (!isSessionActive) {
+            Log.d(TAG, "handleMasterButton: No active session, connecting.")
+            connect()
+            return
+        }
+        // If connected but server not ready, ignore mic click
+        if (!isServerReady) {
+            Log.w(TAG, "handleMasterButton: Server not ready, ignoring.")
+            return
+        }
+
+        // Toggle listening state
+        isListening = !isListening
+        Log.i(TAG, "handleMasterButton: Toggling listening state to: $isListening")
+        if (isListening) {
+            startAudio()
+        } else {
+            stopAudio()
+        }
+        updateUI()
+    }
+
+
+    // --- CORE WEBSOCKET & AUDIO LOGIC ---
     private fun connect() {
         if (isSessionActive) {
             Log.w(TAG, "connect: Already connected or connecting.")
@@ -337,32 +360,6 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
         }
     }
 
-    // ===== AUDIO HANDLING =====
-    private fun startAudio() {
-        if (!::audioHandler.isInitialized) {
-            Log.d(TAG, "startAudio: Initializing audio components first.")
-            initializeComponentsDependentOnAudio()
-        }
-        Log.i(TAG, "startAudio: Starting audio recording.")
-        audioHandler.startRecording()
-        updateStatus("Listening...")
-    }
-
-    private fun stopAudio() {
-        if (::audioHandler.isInitialized) {
-            Log.i(TAG, "stopAudio: Stopping audio recording.")
-            audioHandler.stopRecording()
-        }
-        if (outputTranscriptBuffer.isNotEmpty()) {
-            val finalTranslation = outputTranscriptBuffer.toString().trim()
-            Log.d(TAG, "Displaying final buffered translation: '$finalTranslation'")
-            translationAdapter.addOrUpdateTranslation(finalTranslation, false)
-            outputTranscriptBuffer.clear()
-        }
-        updateStatus("Ready to listen")
-    }
-
-    // ===== MESSAGE PROCESSING =====
     private fun processServerMessage(text: String) {
         Log.v(TAG, "processServerMessage: Received raw message: ${text.take(500)}...")
         try {
@@ -426,35 +423,76 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
         }
     }
 
-    // ===== USER INTERACTION HANDLERS =====
-    private fun handleMasterButton() {
-        if (!isServerReady && !isSessionActive) {
-            Log.d(TAG, "handleMasterButton: No active session, connecting.")
-            connect()
-            return
+    private fun startAudio() {
+        if (!::audioHandler.isInitialized) {
+            Log.d(TAG, "startAudio: Initializing audio components first.")
+            initializeComponentsDependentOnAudio()
         }
-        if (!isServerReady) {
-            Log.w(TAG, "handleMasterButton: Server not ready, ignoring.")
-            return
-        }
-
-        isListening = !isListening
-        Log.i(TAG, "handleMasterButton: Toggling listening state to: $isListening")
-        if (isListening) {
-            startAudio()
-        } else {
-            stopAudio()
-        }
-        updateUI()
+        Log.i(TAG, "startAudio: Starting audio recording.")
+        audioHandler.startRecording()
+        updateStatus("Listening...")
     }
 
-    // ===== DEBUG & UTILITIES =====
+    private fun stopAudio() {
+        if (::audioHandler.isInitialized) {
+            Log.i(TAG, "stopAudio: Stopping audio recording.")
+            audioHandler.stopRecording()
+        }
+        if (outputTranscriptBuffer.isNotEmpty()) {
+            val finalTranslation = outputTranscriptBuffer.toString().trim()
+            Log.d(TAG, "Displaying final buffered translation: '$finalTranslation'")
+            translationAdapter.addOrUpdateTranslation(finalTranslation, false)
+            outputTranscriptBuffer.clear()
+        }
+        updateStatus("Ready to listen")
+    }
+
+
+    // --- DIALOG INTERFACE IMPLEMENTATIONS ---
+    override fun onForceConnect() {
+        Log.i(TAG, "onForceConnect: Forcing reconnection.")
+        Toast.makeText(this, "Forcing reconnection...", Toast.LENGTH_SHORT).show()
+        teardownSession()
+        mainScope.launch {
+            delay(500)
+            connect()
+        }
+    }
+
+
+    // --- HELPER & UTILITY FUNCTIONS ---
+    private fun getVadSensitivity(): Int {
+        val sensitivity = getSharedPreferences("BwctransPrefs", MODE_PRIVATE).getInt("vad_sensitivity_ms", 800)
+        Log.d(TAG, "getVadSensitivity: VAD sensitivity is $sensitivity ms.")
+        return sensitivity
+    }
+
     private fun logToOverlay(message: String) {
         if (binding.debugOverlayScroll.visibility == View.VISIBLE) {
             val timestamp = java.text.SimpleDateFormat("HH:mm:ss.SSS", java.util.Locale.getDefault()).format(java.util.Date())
             binding.debugOverlayText.append("[$timestamp] $message\n")
             binding.debugOverlayScroll.post { binding.debugOverlayScroll.fullScroll(View.FOCUS_DOWN) }
         }
+    }
+
+    private fun updateUI() {
+        binding.micBtn.setImageResource(if (isListening) R.drawable.ic_stop else R.drawable.ic_mic)
+
+        binding.statusText.text = when {
+            !isSessionActive -> "Status: Disconnected\nTap the microphone to connect"
+            !isServerReady -> "Status: Connecting...\nWaiting for server configuration"
+            isListening -> "Status: Listening...\nTap the microphone to stop"
+            else -> "Status: Ready\nTap the microphone to speak"
+        }
+        binding.toolbarInfoText.text = "Model: ${selectedModel}\nAPI: ${selectedApiVersionObject?.value ?: "N/A"}"
+        binding.infoText.visibility = if (translationAdapter.itemCount == 0) View.VISIBLE else View.GONE
+        binding.debugSettingsBtn.isEnabled = true
+        binding.micBtn.isEnabled = (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+        val prefs = getSharedPreferences("BwctransPrefs", MODE_PRIVATE)
+        binding.debugOverlayScroll.visibility = if (prefs.getBoolean("show_debug_overlay", false)) View.VISIBLE else View.GONE
+        
+        // NEW: Disconnect button state
+        binding.disconnectBtn.isEnabled = isSessionActive
     }
 
     private fun updateStatus(line1: String, line2: String = "") {
@@ -464,18 +502,8 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
 
     private fun showError(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        // Example of using the new two-line status for errors
         updateStatus("Error", message)
         Log.e(TAG, "showError: $message")
-    }
-
-    // ===== DIALOG INTERFACE IMPLEMENTATIONS =====
-    override fun onForceConnect() {
-        Log.i(TAG, "onForceConnect: Forcing reconnection.")
-        Toast.makeText(this, "Forcing reconnection...", Toast.LENGTH_SHORT).show()
-        teardownSession()
-        mainScope.launch {
-            delay(500)
-            connect()
-        }
     }
 }
