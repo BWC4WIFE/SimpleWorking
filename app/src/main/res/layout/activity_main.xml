@@ -22,6 +22,17 @@
                 app:navigationIcon="@drawable/ic_arrow_back"
                 app:title=" ">
 
+                <TextView
+                    android:id="@+id/toolbarInfoText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:textSize="12sp"
+                    tools:text="Model: gemini-2.5-flash\nAPI: v1beta"
+                    android:gravity="center"
+                    android:textColor="?attr/colorOnSurface" />
+
+
                 <ImageView
                     android:id="@+id/settingsBtn"
                     android:layout_width="wrap_content"
@@ -53,6 +64,28 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+            <ScrollView
+                android:id="@+id/debugOverlayScroll"
+                android:layout_width="0dp"
+                android:layout_height="120dp"
+                android:background="#80000000"
+                android:padding="4dp"
+                android:visibility="gone"
+                app:layout_constraintBottom_toTopOf="@id/micBtn"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                tools:visibility="visible">
+
+                <TextView
+                    android:id="@+id/debugOverlayText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="#FFFFFF"
+                    android:textSize="10sp"
+                    android:fontFamily="monospace"
+                    tools:text="[INFO] WebSocket connected...\n[DEBUG] Session Handle: 12345-abc\n[ERROR] Failed to decode audio..."/>
+            </ScrollView>
 
             <TextView
                 android:id="@+id/infoText"
