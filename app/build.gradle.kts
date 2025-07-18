@@ -77,7 +77,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
 
 // For DataBinding
-    kapt "com.android.databinding:compiler:8.2.0"
+    kapt ("com.android.databinding:compiler:8.2.0")
 
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
