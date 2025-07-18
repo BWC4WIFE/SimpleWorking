@@ -462,14 +462,14 @@ private fun updateUI() {
         
         binding.micBtn.isEnabled = (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
     }
-    private fun updateStatus(message: String) {
-        binding.statusText.text = "Status: $message"
-        Log.i(TAG, "Status Updated: $message")
-    }
+private fun updateStatus(line1: String, line2: String = "") {
+    binding.statusText.text = if (line2.isNotEmpty()) "$line1\n$line2" else line1
+    Log.i(TAG, "Status Updated: $line1 $line2")
+}
 
-    private fun showError(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-        updateStatus("Alert: $message")
-        Log.e(TAG, "showError: $message")
-    }
+private fun showError(message: String) {
+    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    // Example of using the new two-line status for errors
+    updateStatus("Error", message)
+    Log.e(TAG, "showError: $message")
 }
