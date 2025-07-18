@@ -23,6 +23,11 @@ class TranslationAdapter : RecyclerView.Adapter<TranslationAdapter.TranslationVi
         val (text, isUser) = translations[translations.size - 1 - position]
         holder.binding.translationText.text = text
         holder.binding.speakerLabel.text = if (isUser) "You said:" else "Translation:"
+          if (isUser) {
+            holder.binding.messageContainer.gravity = Gravity.END
+        } else {
+            holder.binding.messageContainer.gravity = Gravity.START
+        }
         holder.binding.translationText.gravity = if (isUser) android.view.Gravity.END else android.view.Gravity.START
         holder.binding.speakerLabel.gravity = if (isUser) android.view.Gravity.END else android.view.Gravity.START
     }
