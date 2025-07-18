@@ -1,4 +1,4 @@
-package com.Bwctrans
+package com.bwctrans
 
 // --- IMPORTS ---
 import android.app.Dialog
