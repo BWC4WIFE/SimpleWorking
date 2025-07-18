@@ -1,6 +1,6 @@
-package com.bwctrans // <-- FIX: Use your new package name
+package com.bwctrans
 
-// --- IMPORTS ---
+// ===== IMPORTS SECTION =====
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -12,17 +12,16 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.bwctrans.databinding.ActivityMainBinding // <-- FIX: This import MUST match your new package name
+import com.bwctrans.databinding.ActivityMainBinding
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.*
 import okhttp3.Response
 import java.lang.StringBuilder
-import com.bwctrans.SettingsDialog // <-- FIX: Use your new package name
-import com.bwctrans.UserSettingsDialogFragment // <-- FIX: Use your new package name
+import com.bwctrans.SettingsDialog
+import com.bwctrans.UserSettingsDialogFragment
 
-
-// --- DATA CLASSES ---
+// ===== DATA CLASSES SECTION =====
 data class ServerResponse(
     @SerializedName("serverContent") val serverContent: ServerContent?,
     @SerializedName("inputTranscription") val inputTranscription: Transcription?,
@@ -46,14 +45,15 @@ data class SetupComplete(val dummy: String? = null)
 data class SessionResumptionUpdate(@SerializedName("newHandle") val newHandle: String?, @SerializedName("resumable") val resumable: Boolean?)
 data class GoAway(@SerializedName("timeLeft") val timeLeft: String?)
 
+// ===== MAIN ACTIVITY CLASS =====
 class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, UserSettingsDialogFragment.UserSettingsListener {
 
-    // --- COMPANION OBJECT ---
+    // ===== COMPANION OBJECT =====
     companion object {
         private const val TAG = "MainActivity"
     }
 
-    // --- PROPERTIES & VIEWS ---
+    // ===== PROPERTIES & VIEW BINDING =====
     private lateinit var binding: ActivityMainBinding
     private lateinit var audioHandler: AudioHandler
     private var webSocketClient: WebSocketClient? = null
@@ -63,18 +63,19 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
     private val gson = Gson()
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
 
-
-    // --- STATE & CONFIGURATION ---
+    // ===== STATE MANAGEMENT =====
     private var sessionHandle: String? = null
-    private val outputTranscriptBuffer = StringBuilder()
     @Volatile private var isListening = false
     @Volatile private var isSessionActive = false
     @Volatile private var isServerReady = false
-
+    private val outputTranscriptBuffer = StringBuilder()
     private val userInputBuffer = StringBuilder()
     private val modelTranslationBuffer = StringBuilder()
     private var lastSpeakerIsUser: Boolean? = null
+    private var reconnectAttempts = 0
+    private val maxReconnectAttempts = 5
 
+    // ===== CONFIGURATION =====
     private val models = listOf("gemini-2.5-flash-preview-native-audio-dialog", "gemini-2.0-flash-live-001", "gemini-2.5-flash-live-preview")
     private var selectedModel: String = models[0]
     private var apiVersions: List<ApiVersion> = emptyList()
@@ -82,12 +83,8 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
     private var selectedApiVersionObject: ApiVersion? = null
     private var selectedApiKeyInfo: ApiKeyInfo? = null
 
-    private var reconnectAttempts = 0
-    private val maxReconnectAttempts = 5
-
-
-    // --- ACTIVITY LIFECYCLE ---
-override fun onCreate(savedInstanceState: Bundle?) {
+    // ===== ACTIVITY LIFECYCLE =====
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -110,10 +107,9 @@ override fun onCreate(savedInstanceState: Bundle?) {
 
         checkPermissions()
         setupUI()
-            val prefs = getSharedPreferences("BwctransPrefs", MODE_PRIVATE)
-            binding.debugOverlayScroll.visibility = if (prefs.getBoolean("show_debug_overlay", false)) View.VISIBLE else View.GONE
-        }
-
+        val prefs = getSharedPreferences("BwctransPrefs", MODE_PRIVATE)
+        binding.debugOverlayScroll.visibility = if (prefs.getBoolean("show_debug_overlay", false)) View.VISIBLE else View.GONE
+    }
 
     override fun onDestroy() {
         super.onDestroy()
@@ -123,9 +119,29 @@ override fun onCreate(savedInstanceState: Bundle?) {
         mainScope.cancel()
     }
 
+    // ===== PERMISSION HANDLING =====
+    private fun checkPermissions() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            Log.i(TAG, "checkPermissions: RECORD_AUDIO permission already granted.")
+            initializeComponentsDependentOnAudio()
+        } else {
+            Log.i(TAG, "checkPermissions: Requesting RECORD_AUDIO permission.")
+            Toast.makeText(this, "Microphone permission is needed for the translator.", Toast.LENGTH_LONG).show()
+            requestAudioPermission()
+        }
+    }
 
-    // --- INITIALIZATION & SETUP ---
-private fun setupUI() {
+    private fun requestAudioPermission() {
+        Log.i(TAG, "requestAudioPermission: Explicitly requesting audio permission.")
+        requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+    }
+
+    override fun onRequestPermission() {
+        requestAudioPermission()
+    }
+
+    // ===== UI SETUP & MANAGEMENT =====
+    private fun setupUI() {
         setSupportActionBar(binding.topAppBar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.topAppBar.setNavigationOnClickListener {
@@ -134,7 +150,7 @@ private fun setupUI() {
 
         translationAdapter = TranslationAdapter()
         binding.transcriptLog.layoutManager = LinearLayoutManager(this).apply {
-            reverseLayout = true // Show new items at the bottom
+            reverseLayout = true
         }
         binding.transcriptLog.adapter = translationAdapter
 
@@ -168,16 +184,24 @@ private fun setupUI() {
         Log.d(TAG, "setupUI: All new UI components initialized.")
     }
 
-    private fun initializeComponentsDependentOnAudio() {
-        if (!::audioHandler.isInitialized) {
-            audioHandler = AudioHandler(this) { audioData ->
-                webSocketClient?.sendAudio(audioData)
-            }
-            Log.i(TAG, "AudioHandler initialized.")
+    private fun updateUI() {
+        binding.micBtn.setImageResource(if (isListening) R.drawable.ic_stop else R.drawable.ic_mic)
+
+        binding.statusText.text = when {
+            !isSessionActive -> "Status: Disconnected\nTap the microphone to connect"
+            !isServerReady -> "Status: Connecting...\nWaiting for server configuration"
+            isListening -> "Status: Listening...\nTap the microphone to stop"
+            else -> "Status: Ready\nTap the microphone to speak"
         }
-        prepareNewClient()
+        binding.toolbarInfoText.text = "Model: ${selectedModel}\nAPI: ${selectedApiVersionObject?.value ?: "N/A"}"
+        binding.infoText.visibility = if (translationAdapter.itemCount == 0) View.VISIBLE else View.GONE
+        binding.debugSettingsBtn.isEnabled = true
+        binding.micBtn.isEnabled = (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+        val prefs = getSharedPreferences("BwctransPrefs", MODE_PRIVATE)
+        binding.debugOverlayScroll.visibility = if (prefs.getBoolean("show_debug_overlay", false)) View.VISIBLE else View.GONE
     }
 
+    // ===== CONFIGURATION MANAGEMENT =====
     private fun loadPreferences() {
         val prefs = getSharedPreferences("BwctransPrefs", MODE_PRIVATE)
         selectedModel = prefs.getString("selected_model", models[0]) ?: models[0]
@@ -207,6 +231,23 @@ private fun setupUI() {
         apiKeys = parsedList
         selectedApiKeyInfo = parsedList.firstOrNull { it.value == getSharedPreferences("BwctransPrefs", MODE_PRIVATE).getString("api_key", null) } ?: apiKeys.firstOrNull()
         Log.d(TAG, "loadApiKeysFromResources: Loaded ${apiKeys.size} API keys. Selected: ${selectedApiKeyInfo?.displayName}")
+    }
+
+    private fun getVadSensitivity(): Int {
+        val sensitivity = getSharedPreferences("BwctransPrefs", MODE_PRIVATE).getInt("vad_sensitivity_ms", 800)
+        Log.d(TAG, "getVadSensitivity: VAD sensitivity is $sensitivity ms.")
+        return sensitivity
+    }
+
+    // ===== WEBSOCKET & AUDIO MANAGEMENT =====
+    private fun initializeComponentsDependentOnAudio() {
+        if (!::audioHandler.isInitialized) {
+            audioHandler = AudioHandler(this) { audioData ->
+                webSocketClient?.sendAudio(audioData)
+            }
+            Log.i(TAG, "AudioHandler initialized.")
+        }
+        prepareNewClient()
     }
 
     private fun prepareNewClient() {
@@ -256,53 +297,6 @@ private fun setupUI() {
         Log.i(TAG, "New WebSocketClient prepared.")
     }
 
-
-    // --- PERMISSION HANDLING ---
-    private fun checkPermissions() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            Log.i(TAG, "checkPermissions: RECORD_AUDIO permission already granted.")
-            initializeComponentsDependentOnAudio()
-        } else {
-            Log.i(TAG, "checkPermissions: Requesting RECORD_AUDIO permission.")
-            Toast.makeText(this, "Microphone permission is needed for the translator.", Toast.LENGTH_LONG).show()
-            requestAudioPermission()
-        }
-    }
-
-    private fun requestAudioPermission() {
-        Log.i(TAG, "requestAudioPermission: Explicitly requesting audio permission.")
-        requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-    }
-
-    override fun onRequestPermission() {
-        requestAudioPermission()
-    }
-
-
-    // --- UI & EVENT HANDLERS ---
-    private fun handleMasterButton() {
-        if (!isServerReady && !isSessionActive) {
-            Log.d(TAG, "handleMasterButton: No active session, connecting.")
-            connect()
-            return
-        }
-        if (!isServerReady) {
-            Log.w(TAG, "handleMasterButton: Server not ready, ignoring.")
-            return
-        }
-
-        isListening = !isListening
-        Log.i(TAG, "handleMasterButton: Toggling listening state to: $isListening")
-        if (isListening) {
-            startAudio()
-        } else {
-            stopAudio()
-        }
-        updateUI()
-    }
-
-
-    // --- CORE WEBSOCKET & AUDIO LOGIC ---
     private fun connect() {
         if (isSessionActive) {
             Log.w(TAG, "connect: Already connected or connecting.")
@@ -343,6 +337,32 @@ private fun setupUI() {
         }
     }
 
+    // ===== AUDIO HANDLING =====
+    private fun startAudio() {
+        if (!::audioHandler.isInitialized) {
+            Log.d(TAG, "startAudio: Initializing audio components first.")
+            initializeComponentsDependentOnAudio()
+        }
+        Log.i(TAG, "startAudio: Starting audio recording.")
+        audioHandler.startRecording()
+        updateStatus("Listening...")
+    }
+
+    private fun stopAudio() {
+        if (::audioHandler.isInitialized) {
+            Log.i(TAG, "stopAudio: Stopping audio recording.")
+            audioHandler.stopRecording()
+        }
+        if (outputTranscriptBuffer.isNotEmpty()) {
+            val finalTranslation = outputTranscriptBuffer.toString().trim()
+            Log.d(TAG, "Displaying final buffered translation: '$finalTranslation'")
+            translationAdapter.addOrUpdateTranslation(finalTranslation, false)
+            outputTranscriptBuffer.clear()
+        }
+        updateStatus("Ready to listen")
+    }
+
+    // ===== MESSAGE PROCESSING =====
     private fun processServerMessage(text: String) {
         Log.v(TAG, "processServerMessage: Received raw message: ${text.take(500)}...")
         try {
@@ -361,7 +381,7 @@ private fun setupUI() {
                 showError("Connection closing in $it. Will reconnect.")
             }
 
-val serverContent = response.serverContent
+            val serverContent = response.serverContent
 
             // 1. Handle Input Transcription (what you said)
             val inputText = response.inputTranscription?.text ?: serverContent?.inputTranscription?.text
@@ -406,32 +426,49 @@ val serverContent = response.serverContent
         }
     }
 
-    private fun startAudio() {
-        if (!::audioHandler.isInitialized) {
-            Log.d(TAG, "startAudio: Initializing audio components first.")
-            initializeComponentsDependentOnAudio()
+    // ===== USER INTERACTION HANDLERS =====
+    private fun handleMasterButton() {
+        if (!isServerReady && !isSessionActive) {
+            Log.d(TAG, "handleMasterButton: No active session, connecting.")
+            connect()
+            return
         }
-        Log.i(TAG, "startAudio: Starting audio recording.")
-        audioHandler.startRecording()
-        updateStatus("Listening...")
+        if (!isServerReady) {
+            Log.w(TAG, "handleMasterButton: Server not ready, ignoring.")
+            return
+        }
+
+        isListening = !isListening
+        Log.i(TAG, "handleMasterButton: Toggling listening state to: $isListening")
+        if (isListening) {
+            startAudio()
+        } else {
+            stopAudio()
+        }
+        updateUI()
     }
 
-    private fun stopAudio() {
-        if (::audioHandler.isInitialized) {
-            Log.i(TAG, "stopAudio: Stopping audio recording.")
-            audioHandler.stopRecording()
+    // ===== DEBUG & UTILITIES =====
+    private fun logToOverlay(message: String) {
+        if (binding.debugOverlayScroll.visibility == View.VISIBLE) {
+            val timestamp = java.text.SimpleDateFormat("HH:mm:ss.SSS", java.util.Locale.getDefault()).format(java.util.Date())
+            binding.debugOverlayText.append("[$timestamp] $message\n")
+            binding.debugOverlayScroll.post { binding.debugOverlayScroll.fullScroll(View.FOCUS_DOWN) }
         }
-        if (outputTranscriptBuffer.isNotEmpty()) {
-            val finalTranslation = outputTranscriptBuffer.toString().trim()
-            Log.d(TAG, "Displaying final buffered translation: '$finalTranslation'")
-            translationAdapter.addOrUpdateTranslation(finalTranslation, false)
-            outputTranscriptBuffer.clear()
-        }
-        updateStatus("Ready to listen")
     }
 
+    private fun updateStatus(line1: String, line2: String = "") {
+        binding.statusText.text = if (line2.isNotEmpty()) "$line1\n$line2" else line1
+        Log.i(TAG, "Status Updated: $line1 $line2")
+    }
 
-    // --- DIALOG INTERFACE IMPLEMENTATIONS ---
+    private fun showError(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        updateStatus("Error", message)
+        Log.e(TAG, "showError: $message")
+    }
+
+    // ===== DIALOG INTERFACE IMPLEMENTATIONS =====
     override fun onForceConnect() {
         Log.i(TAG, "onForceConnect: Forcing reconnection.")
         Toast.makeText(this, "Forcing reconnection...", Toast.LENGTH_SHORT).show()
@@ -441,49 +478,4 @@ val serverContent = response.serverContent
             connect()
         }
     }
-
-
-    // --- HELPER & UTILITY FUNCTIONS ---
-    private fun getVadSensitivity(): Int {
-        val sensitivity = getSharedPreferences("BwctransPrefs", MODE_PRIVATE).getInt("vad_sensitivity_ms", 800)
-        Log.d(TAG, "getVadSensitivity: VAD sensitivity is $sensitivity ms.")
-        return sensitivity
-    }
-
-private fun logToOverlay(message: String) {
-    if (binding.debugOverlayScroll.visibility == View.VISIBLE) {
-        val timestamp = java.text.SimpleDateFormat("HH:mm:ss.SSS", java.util.Locale.getDefault()).format(java.util.Date())
-        binding.debugOverlayText.append("[$timestamp] $message\n")
-        binding.debugOverlayScroll.post { binding.debugOverlayScroll.fullScroll(View.FOCUS_DOWN) }
-    }
-}
-
-private fun updateUI() {
-    binding.micBtn.setImageResource(if (isListening) R.drawable.ic_stop else R.drawable.ic_mic)
-
-    binding.statusText.text = when {
-        !isSessionActive -> "Status: Disconnected\nTap the microphone to connect"
-        !isServerReady -> "Status: Connecting...\nWaiting for server configuration"
-        isListening -> "Status: Listening...\nTap the microphone to stop"
-        else -> "Status: Ready\nTap the microphone to speak"
-    }
-        binding.toolbarInfoText.text = "Model: ${selectedModel}\nAPI: ${selectedApiVersionObject?.value ?: "N/A"}"
-        binding.infoText.visibility = if (translationAdapter.itemCount == 0) View.VISIBLE else View.GONE
-        binding.debugSettingsBtn.isEnabled = true
-        binding.micBtn.isEnabled = (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
-        val prefs = getSharedPreferences("BwctransPrefs", MODE_PRIVATE)
-    binding.debugOverlayScroll.visibility = if (prefs.getBoolean("show_debug_overlay", false)) View.VISIBLE else View.GONE
- 
-}
-
-private fun updateStatus(line1: String, line2: String = "") {
-    binding.statusText.text = if (line2.isNotEmpty()) "$line1\n$line2" else line1
-    Log.i(TAG, "Status Updated: $line1 $line2")
-}
-
-private fun showError(message: String) {
-    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-    // Example of using the new two-line status for errors
-    updateStatus("Error", message)
-    Log.e(TAG, "showError: $message")
 }
