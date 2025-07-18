@@ -3,7 +3,7 @@ package com.bwctrans
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.Bwctrans.databinding.ItemTranslationBinding
+import com.bwctrans.databinding.ItemTranslationBinding
 
 class TranslationAdapter : RecyclerView.Adapter<TranslationAdapter.TranslationViewHolder>() {
 
