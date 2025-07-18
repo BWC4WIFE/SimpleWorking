@@ -110,7 +110,9 @@ override fun onCreate(savedInstanceState: Bundle?) {
 
         checkPermissions()
         setupUI()
-    }
+            val prefs = getSharedPreferences("BwctransPrefs", MODE_PRIVATE)
+            binding.debugOverlayScroll.visibility = if (prefs.getBoolean("show_debug_overlay", false)) View.VISIBLE else View.GONE
+        }
 
 
     override fun onDestroy() {
@@ -304,6 +306,7 @@ private fun setupUI() {
     private fun connect() {
         if (isSessionActive) {
             Log.w(TAG, "connect: Already connected or connecting.")
+            logToOverlay("[WARN] Connect called but already active.")
             return
         }
         reconnectAttempts = 0
@@ -350,6 +353,7 @@ private fun setupUI() {
                     sessionHandle = it.newHandle
                     getSharedPreferences("BwctransPrefs", MODE_PRIVATE).edit().putString("session_handle", sessionHandle).apply()
                     Log.i(TAG, "Session handle updated and saved.")
+                    logToOverlay("[DEBUG] Session handle updated: $sessionHandle")
                 }
             }
             response.goAway?.timeLeft?.let {
@@ -446,22 +450,32 @@ val serverContent = response.serverContent
         return sensitivity
     }
 
-private fun updateUI() {
-        binding.micBtn.setImageResource(if (isListening) R.drawable.ic_stop else R.drawable.ic_mic)
+private fun logToOverlay(message: String) {
+    if (binding.debugOverlayScroll.visibility == View.VISIBLE) {
+        val timestamp = java.text.SimpleDateFormat("HH:mm:ss.SSS", java.util.Locale.getDefault()).format(java.util.Date())
+        binding.debugOverlayText.append("[$timestamp] $message\n")
+        binding.debugOverlayScroll.post { binding.debugOverlayScroll.fullScroll(View.FOCUS_DOWN) }
+    }
+}
 
-         binding.statusText.text = when {
+private fun updateUI() {
+    binding.micBtn.setImageResource(if (isListening) R.drawable.ic_stop else R.drawable.ic_mic)
+
+    binding.statusText.text = when {
         !isSessionActive -> "Status: Disconnected\nTap the microphone to connect"
         !isServerReady -> "Status: Connecting...\nWaiting for server configuration"
         isListening -> "Status: Listening...\nTap the microphone to stop"
         else -> "Status: Ready\nTap the microphone to speak"
-        }
-        binding.infoText.visibility = if (translationAdapter.itemCount == 0) View.VISIBLE else View.GONE
-        
-        // --- MODIFICATION: Always enable Debug Settings button ---
-        binding.debugSettingsBtn.isEnabled = true
-        
-        binding.micBtn.isEnabled = (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
     }
+        binding.toolbarInfoText.text = "Model: ${selectedModel}\nAPI: ${selectedApiVersionObject?.value ?: "N/A"}"
+        binding.infoText.visibility = if (translationAdapter.itemCount == 0) View.VISIBLE else View.GONE
+        binding.debugSettingsBtn.isEnabled = true
+        binding.micBtn.isEnabled = (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+        val prefs = getSharedPreferences("BwctransPrefs", MODE_PRIVATE)
+    binding.debugOverlayScroll.visibility = if (prefs.getBoolean("show_debug_overlay", false)) View.VISIBLE else View.GONE
+ 
+}
+
 private fun updateStatus(line1: String, line2: String = "") {
     binding.statusText.text = if (line2.isNotEmpty()) "$line1\n$line2" else line1
     Log.i(TAG, "Status Updated: $line1 $line2")
