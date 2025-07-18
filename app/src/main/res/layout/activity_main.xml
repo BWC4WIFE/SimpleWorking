@@ -90,8 +90,12 @@
                 android:id="@+id/statusText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                tools:text="Status: Disconnected"
+                tools:text="Status: Disconnected\nTap the mic to begin"
                 android:layout_marginBottom="8dp"
+                
+                android:lines="2"
+                android:gravity="center"
+                android:lineSpacingExtra="4dp" 
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
