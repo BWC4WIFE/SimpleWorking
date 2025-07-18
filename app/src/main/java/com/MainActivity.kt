@@ -1,4 +1,4 @@
-package com.Bwctrans // <-- FIX: Use your new package name
+package com.bwctrans // <-- FIX: Use your new package name
 
 // --- IMPORTS ---
 import android.Manifest
@@ -18,8 +18,8 @@ import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.*
 import okhttp3.Response
 import java.lang.StringBuilder
-import com.Bwctrans.SettingsDialog // <-- FIX: Use your new package name
-import com.Bwctrans.UserSettingsDialogFragment // <-- FIX: Use your new package name
+import com.bwctrans.SettingsDialog // <-- FIX: Use your new package name
+import com.bwctrans.UserSettingsDialogFragment // <-- FIX: Use your new package name
 
 
 // --- DATA CLASSES ---
