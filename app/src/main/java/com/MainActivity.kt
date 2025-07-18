@@ -71,6 +71,10 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
     @Volatile private var isSessionActive = false
     @Volatile private var isServerReady = false
 
+    private val userInputBuffer = StringBuilder()
+    private val modelTranslationBuffer = StringBuilder()
+    private var lastSpeakerIsUser: Boolean? = null
+
     private val models = listOf("gemini-2.5-flash-preview-native-audio-dialog", "gemini-2.0-flash-live-001", "gemini-2.5-flash-live-preview")
     private var selectedModel: String = models[0]
     private var apiVersions: List<ApiVersion> = emptyList()
@@ -83,7 +87,7 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
 
 
     // --- ACTIVITY LIFECYCLE ---
-    override fun onCreate(savedInstanceState: Bundle?) {
+override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -108,6 +112,7 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
         setupUI()
     }
 
+
     override fun onDestroy() {
         super.onDestroy()
         Log.w(TAG, "onDestroy: Activity is being destroyed.")
@@ -118,7 +123,7 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
 
 
     // --- INITIALIZATION & SETUP ---
-    private fun setupUI() {
+private fun setupUI() {
         setSupportActionBar(binding.topAppBar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.topAppBar.setNavigationOnClickListener {
@@ -126,7 +131,9 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
         }
 
         translationAdapter = TranslationAdapter()
-        binding.transcriptLog.layoutManager = LinearLayoutManager(this)
+        binding.transcriptLog.layoutManager = LinearLayoutManager(this).apply {
+            reverseLayout = true // Show new items at the bottom
+        }
         binding.transcriptLog.adapter = translationAdapter
 
         binding.settingsBtn.setOnClickListener {
@@ -350,27 +357,44 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
                 showError("Connection closing in $it. Will reconnect.")
             }
 
-            val outputText = response.outputTranscription?.text ?: response.serverContent?.outputTranscription?.text
-            if (outputText != null) {
-                outputTranscriptBuffer.append(outputText)
+val serverContent = response.serverContent
+
+            // 1. Handle Input Transcription (what you said)
+            val inputText = response.inputTranscription?.text ?: serverContent?.inputTranscription?.text
+            if (inputText != null) {
+                if (lastSpeakerIsUser == false) {
+                    modelTranslationBuffer.clear()
+                }
+                lastSpeakerIsUser = true
+                userInputBuffer.append(inputText)
+                translationAdapter.addOrUpdateTranslation(userInputBuffer.toString().trim(), true)
             }
 
-            val inputText = response.inputTranscription?.text ?: response.serverContent?.inputTranscription?.text
-            if (inputText != null && inputText.isNotBlank()) {
-                if (outputTranscriptBuffer.isNotEmpty()) {
-                    val fullTranslation = outputTranscriptBuffer.toString().trim()
-                    Log.d(TAG, "Displaying full translation: '$fullTranslation'")
-                    translationAdapter.addOrUpdateTranslation(fullTranslation, false)
-                    outputTranscriptBuffer.clear()
+            // 2. Handle Output Transcription (the translation text)
+            val outputText = response.outputTranscription?.text ?: serverContent?.outputTranscription?.text
+            if (outputText != null) {
+                if (lastSpeakerIsUser == true) {
+                    userInputBuffer.clear()
                 }
-                Log.d(TAG, "Displaying user input: '$inputText'")
-                translationAdapter.addOrUpdateTranslation(inputText.trim(), true)
+                lastSpeakerIsUser = false
+                modelTranslationBuffer.append(outputText)
+                translationAdapter.addOrUpdateTranslation(modelTranslationBuffer.toString().trim(), false)
             }
-            response.serverContent?.modelTurn?.parts?.forEach { part ->
+            
+            // 3. Handle Audio Output
+            serverContent?.modelTurn?.parts?.forEach { part ->
                 part.inlineData?.data?.let {
                     Log.d(TAG, "Playing received audio chunk.")
                     audioPlayer.playAudio(it)
                 }
+            }
+            
+            // 4. Handle End of Turn - Clear buffers but DO NOT disconnect
+            if (serverContent?.turnComplete == true) {
+                Log.d(TAG, "Turn complete. Clearing buffers for next interaction.")
+                userInputBuffer.clear()
+                modelTranslationBuffer.clear()
+                lastSpeakerIsUser = null
             }
 
         } catch (e: Exception) {
@@ -422,20 +446,22 @@ class MainActivity : AppCompatActivity(), SettingsDialog.DevSettingsListener, Us
         return sensitivity
     }
 
-    private fun updateUI() {
+private fun updateUI() {
         binding.micBtn.setImageResource(if (isListening) R.drawable.ic_stop else R.drawable.ic_mic)
 
         binding.statusText.text = when {
             !isSessionActive -> "Status: Disconnected"
             !isServerReady -> "Status: Connecting..."
             isListening -> "Listening..."
-            else -> ""
+            else -> "Status: Ready"
         }
         binding.infoText.visibility = if (translationAdapter.itemCount == 0) View.VISIBLE else View.GONE
-        binding.debugSettingsBtn.isEnabled = !isSessionActive
+        
+        // --- MODIFICATION: Always enable Debug Settings button ---
+        binding.debugSettingsBtn.isEnabled = true
+        
         binding.micBtn.isEnabled = (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
     }
-
     private fun updateStatus(message: String) {
         binding.statusText.text = "Status: $message"
         Log.i(TAG, "Status Updated: $message")
