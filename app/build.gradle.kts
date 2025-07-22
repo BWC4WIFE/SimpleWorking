@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.SimpleWorking"
+    namespace = "com.simpleworking"
     compileSdk = 34
 
     defaultConfig {
