@@ -1,10 +1,10 @@
-package com.bwctrans
+package com.simpleworking
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import android.view.Gravity
-import com.bwctrans.databinding.ItemTranslationBinding
+import com.simpleworking.databinding.ItemTranslationBinding
 
 class TranslationAdapter : RecyclerView.Adapter<TranslationAdapter.TranslationViewHolder>() {
 
