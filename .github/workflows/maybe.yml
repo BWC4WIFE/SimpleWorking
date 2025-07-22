@@ -69,4 +69,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: SimpleWorkingdebug_1.0.apk
-          path: app/build/outputs/apk/debug/ SimpleWorkingdebug_1.0.apk
+          path: app/build/outputs/apk/debug/SimpleWorkingdebug_1.0.apk
