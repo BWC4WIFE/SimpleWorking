@@ -1,4 +1,4 @@
-package com.bwctrans
+package com.simpleworking
 
 import android.content.Context
 import android.os.Bundle
@@ -9,7 +9,7 @@ import android.widget.Toast
 import android.app.Dialog
 import android.widget.FrameLayout
 import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.bwctrans.databinding.DialogUserSettingsBinding
+import com.simpleworking.databinding.DialogUserSettingsBinding
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import android.Manifest
 import androidx.core.content.ContextCompat
