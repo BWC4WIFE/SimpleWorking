@@ -1,4 +1,4 @@
-package com.bwctrans
+package com.simpleworking
 
 // --- IMPORTS ---
 import android.app.Dialog
@@ -10,7 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.RadioButton
 import android.widget.SeekBar
-import com.bwctrans.databinding.DialogSettingsBinding
+import com.simpleworking.databinding.DialogSettingsBinding
 
 // --- CLASS & INTERFACE ---
 class SettingsDialog(
