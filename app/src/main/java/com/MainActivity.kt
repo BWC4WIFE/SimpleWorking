@@ -1,4 +1,4 @@
-package com.bwctrans
+package com.simpleworking
 
 // --- IMPORTS ---
 import android.Manifest
@@ -12,7 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.bwctrans.databinding.ActivityMainBinding
+import com.simpleworking.databinding.ActivityMainBinding
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.*
